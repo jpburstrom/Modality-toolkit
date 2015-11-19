@@ -1,0 +1,182 @@
+TITLE:: MKtlDesc
+summary:: handling descriptions of interface devices in Modality
+categories:: Overviews/Modality
+related:: Classes/MKtl, Classes/MKtlElement, Classes/MKtlElementGroup
+
+DESCRIPTION::
+
+MKtlDesc can read description files for hardware interface devices from its folder or other folders. It converts them into MKtlDesc objects, which contain general information about the device, and detailed information about all of its interface elements (such as sliders, buttons, joysticks, etc etc). MKtlDescs are used to create MKtls and its elements.
+Usually, MKtlDescs are created automatically when making MKtls.
+
+Some examples:
+code::
+// see which devices are supported by Modality
+MKtlDesc.web;
+// (if yours is not there yet, donate one and we add its desc ;-)
+
+MKtlDesc.defaultFolder;			// where modality puts descriptions
+MKtlDesc.addFolder("~/Desktop/"); // users can add folders
+MKtlDesc.descFolders;			// which show up here
+MKtlDesc.openFolder(0);			// and can be opened by index
+MKtlDesc.openFolder(1);
+
+MKtlDesc.loadDescs;				// load all description files
+MKtlDesc.loadDescs("*nano*");	// or matching ones
+MKtlDesc.loadDescs("nano*", folderIndex: 0); // in specific places
+
+MKtlDesc.allDescs;				// all currently loaded descs
+MKtlDesc('korg-nanokey2').dump;	// look at one
+MKtlDesc('korg-nanokey2').web;	// open its web documentation
+
+	// make one from a desc filename
+x = MKtlDesc.fromFileName("korg-nanokontrol2");
+x.openFile;			// open its file
+x.fullDesc			// the dict that has contains the info
+x.fullDesc.keys;	// the description items:
+x.protocol;			// one of [\midi, \hid, \osc];
+x.idInfo.postcs;	// the device name under which it registers in the OS
+x.elementsDesc;		// the hierarchical description of the elements
+x.elAt(\sl);		// access single elements or groups by name or index
+x.elAt(\sl, 0);		// access elements by name or index
+x.elementsDict.keys;
+
+x.postInfo;			// post overview info
+x.postInfo(postElements: true); // and the elements too
+	// not working properly
+x.postElements;
+::
+
+CLASSMETHODS::
+
+PRIVATE:: initClass, docURI, parentExt, webview
+
+METHOD:: defaultFolder
+the path where the folder for MKtlDesc files lives.
+
+METHOD:: folderName
+the filename of the defaultFolder.
+
+METHOD:: descFolders
+all descFolders within which to look for MKtlDesc files.
+
+METHOD:: addFolder
+add a folder to descFolders
+
+METHOD:: openFolder
+open folder(s) in descFolders by index.
+
+METHOD:: loadDescs
+load matching descriptions in descFolders.
+
+METHOD:: postLoadable
+post the filenames of descs that can be loaded
+
+METHOD:: postLoaded
+post currently loaded descs
+
+METHOD:: postDescKeysUsed
+post all element keys used in loaded descs
+
+METHOD:: allDescs
+all currently loaded descs
+
+METHOD:: isValidDescDict
+check whether dict is a valid description dict.
+
+PRIVATE:: isValidElemDesc, isValidHIDDesc, isValidMidiDesc, isValidOSCDesc
+
+METHOD:: postStatus
+post status and name of all loaded descs
+
+
+METHOD:: new
+create an MKtlDesc with a name, from a well-formed description file.
+
+METHOD:: at
+access an MKtlDesc by name in the global repository
+
+METHOD:: fromFileName
+create an MKtlDesc from a file.
+ARGUMENT:: filename
+filename without path or extension, will be looked for in descfolders.
+ARGUMENT:: folderIndex
+in which folder of descFolders to search the file
+ARGUMENT:: multi
+flag whether to load multiple matching files
+
+
+METHOD:: fromDict
+create an MKtlDesc from a well-formed description dict.
+
+METHOD:: findFile
+find the filepath for a given desc name.
+
+METHOD:: fromPath
+create an MKtlDesc from a full file path.
+
+METHOD:: web
+get info for an MKtlDesc on the web
+code::
+MKtlDesc.web;
+MKtlDesc("*manta").web;
+MKtlDesc.webview;
+::
+
+SUBSECTION:: internal methods
+
+Method:: compExt, descExt
+legal extensions for filenames
+
+Method:: fileToIDDict
+a dictionary that contains the idInfos for every desc file
+
+Method:: idInfoForFilename, filenamesForIDInfo
+find filenames and device idInfos for each other
+
+Method:: writeCache, cacheName, loadCache, updateCache
+support methods for cache of filenames and idInfos
+
+private:: fillMidiDefaults, resolveForPlatform, isElementTestFunc, findParent, prMakeElemColls, makeElemKeys
+
+
+INSTANCEMETHODS::
+
+METHOD:: fullDesc
+get MKtlDesc's properties, or set them from a dict
+fullDesc.elementsDesc contains the description of all elements
+
+METHOD:: path
+the path where file was read (if so)
+
+METHOD:: writeFile
+not done yet - should eventually write a well-formed description file
+at path based on its current data.
+
+METHOD:: postInfo
+post info on the device, if postElements = true, also info on the elements
+
+METHOD:: postElements
+post info on the elements
+
+METHOD:: deviceFilename
+get the filename of the desc file
+
+METHOD:: idInfo
+get the string by which the hardware device registers to the OS.
+
+METHOD:: protocol
+get and set the hardware protocol of the device.
+
+METHOD:: openFile
+open the desc file from which the MKtlDesc was generated
+
+METHOD::  web
+open a webview on the device's info page at Modality website.
+
+METHOD:: elementsAssocArray
+contains all elements in an assocArray, for internal use.
+
+PRIVATE:: init, storeArgs, printOn, writeCache, loadCache
+
+private:: docURI, elementsDesc, elementsDesc = type, getMidiMsgTypes, inferName, name, resolveDescEntriesForPlatform, specialMessage, specialMessageNames, findParent, makeElemKeys, prMakeElemColls
+

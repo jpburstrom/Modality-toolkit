@@ -1,5 +1,5 @@
 TITLE:: HIDMKtlDevice
-summary:: A class for creating and accessing external hid controllers
+summary:: The Modality class for creating and accessing external hid controllers
 categories:: Libraries>Modality, External Control
 related:: Overviews/Modality, Classes/MKtl, Classes/MKtlDevice, Classes/MKtlElement
 
@@ -15,8 +15,13 @@ More general info can be found in link::Classes/MKtl:: and link::Classes/MKtlDev
 
 CLASSMETHODS::
 
-private:: initialized, sourceDeviceDict, prepareDeviceDicts
+private:: initialized
 
+METHOD:: deviceProductNamesToHide, devicesToShow
+On OSX, some devices show up as HID that will cause system crashes when opened. these devices can be excluded from MKtl for safety.
+
+METHOD:: showAllDevices
+a flag whether to show risky devices or not.
 
 METHOD:: find
 Find all currently connected HID devices.
@@ -39,30 +44,11 @@ Look for available HID devices.
 argument:: force
 Whether or not to do this again if it was already done before.
 
-METHOD:: getSourceName
-Ge the full device name from the short source name.
-
-argument:: shortName
-A Symbol as it shows up in the short names found by MKtl.find.
-
-METHOD:: findSource
-Find a source or destination with a given device product name and vendor name.
-
-argument:: rawDeviceName
-The device product name to search for.
-
-argument:: rawVendorName
-The device vendor name to search for.
-
-
-
 METHOD:: makeDeviceName
-Convenience method to create a device name from the information from link::Classes/HIDInfo:: to put in the device description.
+Convenience method to create a device name from the information from link::Classes/HIDInfo:: for idInfo lookup.
 
-ARGUMENT:: hidinfo
-(describe argument here)
-
-returns:: (describe returnvalue here)
+METHOD:: getIDInfoFrom
+get the idInfo string from a HIDInfo object.
 
 
 METHOD::new
@@ -78,10 +64,18 @@ The path of the device to open (optional).
 argument:: parentMKtl
 The instance of link::Classes/MKtl:: that this MKtlDevice will belong to.
 
+argument:: multiIndex
+When using multiple identical devices, the index which one to use.
+
 
 INSTANCEMETHODS::
 
-private:: initHIDMKtl, setHIDActions, removeHIDActions
+private:: initHIDMKtl, initCollectives, cleanupElementsAndCollectives
+
+METHOD:: enable, disable
+enable or disable this device.
+METHOD:: enabled
+a boolean whether device is currently enabled.
 
 METHOD:: closeDevice
 Close the device and clean up anything that it used.
@@ -90,7 +84,7 @@ Close the device and clean up anything that it used.
 METHOD:: explore
 When opening a device that is not known yet by MKtl, you want to explore the device. See for a full tutorial: link::Tutorials/How_to_create_a_description_file::
 
-ARGUMENT:: mode
+ARGUMENT:: bool
 a Boolean to turn this on or off.
 
 METHOD:: exploring
@@ -103,13 +97,8 @@ Create and open a description file for this MKtlDevice, after exploring it.
 METHOD:: initElements
 Initialize all elements and hook them up to the hardware elements.
 
-
-METHOD:: cleanupElements
-De-initialize all elements.
-
-
 METHOD:: send
-Send the value of the element to the MIDI device; called if you set the value of an MKtlElement that is an output.
+Send the value of the element to the HID device; called if you set the value of an MKtlElement that is an output.
 
 argument:: key
 The key of the element.
@@ -123,7 +112,7 @@ METHOD:: srcID
 The uid of the source.
 
 
-METHOD:: srcDevice
+METHOD:: source
 The link::Classes/HID:: device that is the source for this HIDMKtlDevice.
 
 returns:: an instance of link::Classes/HID::

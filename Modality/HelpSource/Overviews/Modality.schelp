@@ -1,13 +1,13 @@
 title:: Modality
-summary:: Toolkit to simplify the creation of personal (electronic) instruments utilising hardware and software controllers of any kind.
+summary:: Toolkit to simplify the creation of personal electronic instruments utilising hardware and software controllers of any kind.
 categories:: Libraries>Modality, External Control
 related:: Overviews/Modality, Classes/MKtl, Tutorials/ModalityTutorial
 
 Section:: Introduction
 
-Modality is a toolkit created by a team of developers and (advanced) users of SuperCollider.
+Modality is a toolkit created by a team of developers and users of SuperCollider.
 
-One of its basic ideas is to simplify the creation of your very personal instruments with SuperCollider, using controllers of many different kinds. To this end, a common code interface, MKtl, is used for connecting  controllers from different sources (and protocols) like HID and MIDI, Serial, OSC, GUI, etc.
+One of its basic ideas is to simplify the creation of your very personal instruments with SuperCollider, using controllers of many different kinds. To this end, a common code interface, MKtl, is used for connecting  controllers from different sources (and protocols) like HID and MIDI and OSC.
 
 A second starting point is that the same physical interfaces (sets of sliders, buttons, motion sensors etc etc) can be used for many different purposes, and a highly modal approach to mapping and on-the-fly remapping can help to make a setup much more flexible, powerful, and interesting to play. For example, when improvising with acoustic musicians, highly modal interfaces allow much faster changes of overall (performing) direction.
 
@@ -22,9 +22,13 @@ LIST::
 ##link::Reference/SupportedDevices::
 ::
 
-There are tutorial files and examples of common usage cases of MKtl available here:
+Find many tutorial files and examples of common use cases of MKtl here:
 link::https://github.com/ModalityTeam/ModalityWorkshop::
-
+Also, many description files have little examples for their device:
+code::
+MKtlDesc.openFolder;
+MKtlDesc.loadDescs.choose.openFile;
+::
 
 SECTION:: Overview
 
@@ -35,7 +39,7 @@ code::
 MKtl.find;
 ::
 
-NOTE:: You may have to install drivers before code::MKtl.find:: is able to find your device.::
+NOTE:: You may have to install drivers before code::MKtl.find:: is able to find your device. Some devices may show up as multiple protocols. Example: the code::ICON IControls:: show up as both code::MIDI:: and code::HID::.::
 
 Each code::MKtl:: has elements such as sliders or knobs. It is possible to assign an action to such an element that is evaluated every time the value of that element gets updated.
 
@@ -45,12 +49,26 @@ subsection:: Example NanoKontrol2
 
 code::
 // plug in your NanoKontrol2 and evaluate this line.
-// If there is no such controller connected, it opens a fake gui-based controller for you.
-k = MKtl('nnkn20');
+k = MKtl('nk2', "korg-nanokontrol2");
 
-k.gui; // opens a gui representation of the device
+// or do this first, grab the last line pasted,
+MKtl.find(\midi);
+// and change the name:
+k = MKtl('myNK2', "korg-nanokontrol2");
 
-s.boot; // boot the server
+// turn on trace, then move some elements to see that the nano works
+k.trace;
+k.trace(false);
+
+// If no such controller is connected, you can still open
+// a gui controller instead that has the same elements:
+k.gui;
+
+// make sure there are no current assigned actions
+k.reset;
+
+// boot the server
+s.boot;
 
 (
 // play a sound
@@ -83,37 +101,53 @@ k.elementAt(\sl, 2).action = {arg el;
 
 // after testing, free sound
 x.free;
+
+// and free the device
+k.free;
 ::
 
 subsection:: Example BCR2000
 
 code::
 // plug in your BCR2000 and evaluate this line.
-// If there is no such controller connected, it opens a fake gui-based controller for you.
-k = MKtl('bcr20000');
+k = MKtl('myBCR', "behringer-bcr2000");
 
-k.gui;      // open a gui representation of the device
+// turn on trace, then move some elements to see that the nano works
+k.trace;
+k.trace(false);
 
-k.elements; // dictionary of controls keys to MKtlElements
+// If no such controller is connected, you can still open
+// a gui controller instead that has the same elements:
+k.gui;
 
-// elements can be accessed through their hierarchy:
+// make sure there are no current assigned actions
+k.reset;
+
+// dictionary of controls keys to MKtlElements
+k.elements;
+
+// elements can be accessed through a hierarchy:
 k.elementAt(\kn, 0, 0);
 
 // all knobs of the first row
-k.elementAt(\kn, 0); // -> MktElementArray
+k.elementAt(\kn, 0); // -> MKtlElementGroup
 
 // elements have a type:
 k.elementAt(\kn, 0, 0).type;
 
 // select elements by their type:
-k.allElements.select{ |x| x.type == \encoder };
+k.elementsDict.select { |x| x.type == \encoder };
 
 // perform an action on turning knob [0,0] (upper left)
 k.elementAt(\kn, 0, 0).action = { |el| el.value.postln };
 
-// simple sound example
-x = { RLPF.ar(Saw.ar(\freq.kr(440, 0.1), mul: 0.1), 1000)}.play;
+// boot the server
+s.boot;
 
+// simple sound example
+x = { Splay.ar(RLPF.ar(Saw.ar(\freq.kr(440, 0.1), mul: 0.1), 1000))}.play;
+
+// .action overrides previously set actions
 (
 k.elementAt(\kn, 0, 0).action_({ |el|
 	x.set(\freq, el.value.linlin(0.0, 1, 300.0, 600));
@@ -125,6 +159,9 @@ x.free;
 
 // send data back to the device
 k.elementAt(\kn,0,0).value_(0.5);
+
+// remove all assigned actions
+k.reset;
 ::
 
 
@@ -133,10 +170,10 @@ code::
 (
 d = 0;
 {
-	loop{
+	loop {
 		0.05.wait;
 		d = d + 0.01;
-		8.do{ |i|
+		8.do { |i|
 			k.elementAt(\kn, 0, i).value_(
 				(d + (i/7)).mod(1.0);
 			);
@@ -153,4 +190,4 @@ To do so, look at link::Tutorials/How_to_create_a_description_file::.
 
 section:: Acknowledgements
 Modality and its research meetings have kindly been supported by BEK in Bergen, Norway, and STEIM, Amsterdam.
-The ModalityTeam is, in no obvious order: Jeff Carey, Bjoernar Habbestad, Marije Baalman, Alberto de Campo, Tijs Ham, Wouter Snoei, Till Bovermann, Miguel Negrao, Robert van Heumen, Hannes Hoelzl, Tim Blechmann, Amelie Hinrichsen, and Dominik Hildebrand Marques Lopes.
+The ModalityTeam is, in no obvious order: Jeff Carey, Bjørnar Habbestad, Marije Baalman, Alberto de Campo, Tijs Ham, Wouter Snoei, Till Bovermann, Miguel Negrao, Robert van Heumen, Hannes Hoelzl, Tim Blechmann, Amelie Hinrichsen, and Dominik Hildebrand Marques Lopes.
