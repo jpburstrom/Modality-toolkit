@@ -5,7 +5,7 @@ deviceType: \push,
 elementTypes: [\pad, \button, \encoder, \display, \bend],
 status: (
 	linux: "unknown",
-	osx: "tested",
+	osx: "tested and working, 15.3.2016 by LFSaw.de. GUI layout is missing.",
 	win: "unknown"),
 
 idInfo: "Ableton Push",
@@ -13,7 +13,7 @@ idInfo: "Ableton Push",
 deviceInfo: (
 	vendorURI: "https://www.ableton.com/en/push/",
 	manualURI: "https://www.ableton.com/en/manual/using-push/",
-	description: "Official Ableton Live controller.",
+	description: "Official Ableton Live controller (version 1).",
 	features: [
 		"64 velocity and pressure-sensitive pads",
 		"RGB backlighting",
@@ -24,14 +24,12 @@ deviceInfo: (
 	],
 	notes:
 	"Currently only ```User-mode``` supported.\n"
-	"Usage:\n"
-	"\n"
+	"Usage:\n\n"
 	"```\n"
 	"m = MKtl('push', \"ableton*\", multiIndex: 1);\n"
-	"```\n"
-	"\n"
-	"Helper class: ```MPushHelper```",
-	hasScribble: true
+	"```\n\n"
+	"Helper class: ```MPush```",
+	longName: "Ableton Push",
 ),
 
 // display still missing because SysEx and different MIDI port...
@@ -41,19 +39,16 @@ elementsDesc: (
 		//------ pads -------------
 		(
 			key: \pad,
+			shared: (elementType: \pad),
 			elements: (36..99).clump(8).reverse.collect { |rownums, i|
 				(
 					elements: rownums.collect { |num, j|
 						(
+							shared: (midiNum: num),
 							elements: [
-								(
-									key: \note, midiNum: num,
-									midiMsgType: \noteOnOff, elementType: \pad,
-									spec: \midiNote, ioType: \inout),
-								(
-									key: \poly, midiNum: num,
-									midiMsgType: 'polyTouch', elementType: 'keytouch',
-									spec: 'midiCC', ioType: \in)
+								(key: \on, 'midiMsgType': 'noteOn', 'spec': 'midiVel', ioType: \inout),
+								(key: \off, 'midiMsgType': 'noteOff', 'spec': 'midiVel', ioType: \in),
+								(key: \touch, 'midiMsgType': 'polyTouch', 'spec': 'midiCC', ioType: \in),
 							]
 						)
 					}
@@ -64,12 +59,19 @@ elementsDesc: (
 		(
 			key: \ribbon,
 			elements: [
+				MKtlDesc.notePair(\touch, 12,
+					shared: (
+						elementType: 'button',
+						midiChan: 0,
+						spec: 'midiNote'
+					)
+				),
 				(
-					key: \touch, midiMsgType: 'noteOnOff', elementType: 'button',
-					midiChan: 0, midiNum: 12,   spec: 'midiNote'),
-				(
-					key: \bend, midiMsgType: 'bend', elementType: 'ribbon',
-					spec: 'midiBend')
+					key: \bend,
+					midiMsgType: 'bend',
+					elementType: 'ribbon',
+					spec: 'midiBend'
+				)
 			]
 		),
 		//------ encoderTopRow
@@ -78,9 +80,13 @@ elementsDesc: (
 			elements: [
 				(
 					key: \touch,
-					shared: (midiMsgType: \noteOnOff, elementType: 'button',
-						spec: \midiVel),
-					elements: ( 0.. 8).collect { |num| (midiNum: num) }
+					shared: (
+						elementType: 'button',
+						spec: \midiVel
+					),
+					elements: ( 0.. 8).collect { |num|
+						MKtlDesc.notePair((num+1).asSymbol, num)
+					}
 				),
 				(
 					key: \turn,
@@ -93,23 +99,39 @@ elementsDesc: (
 		(
 			key: \knLeft,
 			elements: [
+				MKtlDesc.notePair(\touch, 10,
+					shared: (
+						elementType: \button,
+						spec: \midiVel
+
+					),
+				),
 				(
-					key: \touch, midiMsgType: \noteOnOff, elementType: \button,
-					midiNum: 10, spec: \midiVel),
-				(
-					key: \turn, midiMsgType: \cc, elementType: \encoder,
-					midiNum: 14, spec: \midiBut)
+					key: \turn,
+					midiMsgType: \cc,
+					elementType: \encoder,
+					midiNum: 14,
+					spec: \midiBut
+				)
 			]
 		),
 		(
 			key: \knRight,
 			elements: [
+				MKtlDesc.notePair(\touch, 9,
+					shared: (
+						elementType: \button,
+						spec: \midiVel
+
+					),
+				),
 				(
-					key: \touch, midiMsgType: \noteOnOff, elementType: \button,
-					midiNum: 9, spec: \midiVel),
-				(
-					key: \turn, midiMsgType: \cc, elementType: \encoder,
-					midiNum: 15, spec: \midiBut)
+					key: \turn,
+					midiMsgType: \cc,
+					elementType: \encoder,
+					midiNum: 15,
+					spec: \midiBut
+				)
 			]
 		),
 		//------ color button rows
@@ -155,9 +177,11 @@ elementsDesc: (
 				(key: \quantize, midiNum: 116),
 				(key: \fixedLength, midiNum: 90),
 				(key: \automation, midiNum: 89),
+				(key: \duplicate, midiNum: 88),
 				(key: \new, midiNum: 87),
 				(key: \record, midiNum: 86),
 				(key: \play, midiNum: 85),
+				(key: \stop, midiNum: 29),
 				(key: \master, midiNum: 28),
 				(key: \volume, midiNum: 114),
 				(key: \track, midiNum: 112),
@@ -189,6 +213,17 @@ elementsDesc: (
 				(key: \up, midiNum: 46),
 				(key: \down, midiNum: 47)
 			]
+		),
+		(
+			key: \pedal,
+			shared: (midiMsgType: 'cc', elementType: 'button',
+				spec: 'midiCC', ioType: \in
+			),
+			elements: [
+				(key: '1', midiNum: 64),
+				(key: '2', midiNum: 69)
+			]
+
 		)
 	]
 )

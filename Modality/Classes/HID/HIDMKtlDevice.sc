@@ -6,7 +6,7 @@ HIDMKtlDevice : MKtlDevice {
 
 	var <srcID, <source;
 	var <enabled = true;
-	var <hidElemDict, <hidElemFuncDict, <hidElemLookupDict;
+	var <hidElemDict, <hidElemFuncDict;
 
 	*initClass {
 		Platform.case(\osx, {
@@ -58,6 +58,7 @@ HIDMKtlDevice : MKtlDevice {
 		var postables = MKtlLookup.allFor(\hid);
 		var foundHidden = showAllDevices.not and: { HID.available.size != postables.size };
 		var hiddenStr = "// HID: Some HIDs not shown that can crash the OS. See: HID.available;";
+		var genericHint;
 
 		if (foundHidden) { hiddenStr.postln; };
 		if (postables.size == 0) {
@@ -65,9 +66,8 @@ HIDMKtlDevice : MKtlDevice {
 			^this
 		};
 
-		"\n// Available HIDMKtlDevices:".postln;
-		"// MKtl('myNickName', 'lookupName');"
-		"\n\t\t// [ product, vendor, (serial#) ]\n".postln;
+		"\n/*** Possible MKtls for HID devices: ***/".postln;
+		"\t// [ product, vendor, (serial#) ]\n".postln;
 		postables.sortedKeysValuesDo { |lookupKey, infodict|
 			var info = infodict.deviceInfo;
 			var product = info.productName;
@@ -75,20 +75,18 @@ HIDMKtlDevice : MKtlDevice {
 			var serial = info.serialNumber;
 			var postList = [product, vendor];
 			var filenames = MKtlDesc.filenamesForIDInfo(infodict.idInfo);
-
 			var nameKey = lookupKey.asString.keep(12).asSymbol;
 
 			if (serial.notEmpty) {
 				postList = postList.add(serial);
 			};
+			postList.cs.postcln;
 
-			// post with lookupKey
-			"MKtl('%', %);\n\t\t// %\n"
-			.postf(nameKey, lookupKey.cs, postList.cs);
-
-			// post with desc file names:
-			this.descFileStrFor(nameKey, filenames,
-				infodict.multiIndex).post;
+			if (filenames.size == 0) {
+				genericHint = "\n\t// (or match with a generic desc)";
+			};
+			this.descFileStrFor(nameKey, lookupKey, filenames,
+				infodict.multiIndex, genericHint).post;
 		};
 	}
 
@@ -153,22 +151,12 @@ HIDMKtlDevice : MKtlDevice {
 
 		hidElemDict = ();
 		hidElemFuncDict = ();
-		hidElemLookupDict = ();
 
-		if (mktl.desc.isNil) {
-			"// % : opened device without desc file. \n"
-			"// Maybe you want to explore this device?\n".postf(mktl);
-			"%.explore;\n\n".postf(mktl);
-		} {
+		if (mktl.desc.notNil) {
 			this.initElements;
 			this.initCollectives;
 		};
 	}
-
-	// // how best to do that?
-	// enable { enabled = true }
-	// disable { enabled = false }
-
 
 	closeDevice {
 		this.cleanupElementsAndCollectives;
@@ -210,21 +198,7 @@ HIDMKtlDevice : MKtlDevice {
 	}
 
 	cleanupElementsAndCollectives {
-		mktl.elementsDict.do{ |el|
-			var theseElements;
-			var elid = el.elemDesc[\hidElementID];
-			var page = el.elemDesc[\hidUsagePage];
-			var usage = el.elemDesc[\hidUsage];
-
-			if ( elid.notNil ) { // filter by element id
-				source.elements.at( elid ).action = nil;
-			} {
-				theseElements = source.findElementWithUsage( usage, page );
-				theseElements.do { |it|
-					it.action = nil;
-				}
-			}
-		};
+		this.disable;
 	}
 
 	// nothing here yet, to be ported
@@ -301,6 +275,8 @@ HIDMKtlDevice : MKtlDevice {
 		hidElem.action = hidElemAction.removeFunc(funcToRemove);
 	}
 
+	// not elegant to write global enabling into each element.
+	// there should be a simpler global way.
 	enable { |elemKeys|
 		(elemKeys ? mktl.elementsDict.keys).do { |elem|
 			this.enableElement(elem);

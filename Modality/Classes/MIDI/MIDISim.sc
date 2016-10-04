@@ -2,8 +2,6 @@
 MIDISim {
 	classvar methodNames = #[ 'action', 'noteOn', 'noteOff', 'polytouch', 'control', 'program', 'touch', 'bend', 'sysex', 'sysexPacket', 'sysrt', 'smpte', 'invalid', 'noteOnList', 'noteOffList', 'polyList', 'controlList', 'programList', 'touchList', 'bendList' ];
 
-	classvar <player;
-
 	*value { |ev|
 		var list = ev[\numbers].collect (_.value);
 		var msgType = ev[\midiMsgType];
@@ -21,11 +19,11 @@ MIDISim {
 	*status { arg src, status, a, b, c;
 		MIDIIn.doAction(src, status, a, b, c);
 	}
-	*noteOn { arg src, chan, num, veloc;
-		MIDIIn.doNoteOnAction(src, chan, num, veloc);
+	*noteOn { arg src, chan, num, vel;
+		MIDIIn.doNoteOnAction(src, chan, num, vel);
 	}
-	*noteOff { arg src, chan, num, veloc;
-		MIDIIn.doNoteOffAction(src, chan, num, veloc);
+	*noteOff { arg src, chan, num, vel;
+		MIDIIn.doNoteOffAction(src, chan, num, vel);
 	}
 	*polytouch { arg src, chan, num, val;
 		MIDIIn.doPolyTouchAction(src, chan, num, val);

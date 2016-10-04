@@ -10,7 +10,7 @@ NOT DONE YET:
 -> use PassSpec for not touching raw values
 
 
-o = OSCMonitor.new;
+o = OSCMon.new;
 o.enable;
 // which sending addresses?
 o.anaDict.msgNamesByAddr.keys.postcs
@@ -25,7 +25,7 @@ OSCFunc.trace;
 OSCFunc.trace(false);
 
 g = MKtl(\xosc, "*x-osc");
-// update with the address seen in OSCMonitor or OSCFunc.trace:
+// update with the address seen in OSCMon or OSCFunc.trace:
 g.device.updateSrcAddr("169.254.1.1", 9000);
 
 g.trace
@@ -40,9 +40,9 @@ protocol: \osc,
 deviceType: \multiController,
 elementTypes: [\accelerometer, \sensor, \serial],
 status: (
-	linux: "unknown",
-	osx: "incomplete",
-	win: "unknown"
+	linux: "unknown after refactor, incomplete",
+	osx: "unknown after refactor, incomplete",
+	win: "unknown after refactor, incomplete"
 ),
 
 idInfo: "x-osc",
@@ -51,7 +51,7 @@ netAddrInfo: ( ipAddress: "169.254.1.1", recvPort: 57120 ), // ip for adhoc mode
 deviceInfo: (
 	vendorURI: "http://www.x-io.co.uk/products/x-osc/",
 	manualURI: "http://www.x-io.co.uk/downloads/x-OSC-User-Manual-v0.4.pdf",
-	description: "x-OSC is a wireless I/O board that provides just about any software with access to 32 high-performance analogue/digital channels and on-board sensors (gyroscope, accelerometer, magnetometer) via OSC messages over WiFi. There is no user programmable firmware and no software or drivers to install making x-OSC immediately compatible with any WiFi-enabled platform. All internal settings can be adjusted using any web browser.",
+	description: "WLan OSC I/O board",
 	features: [
 		"16× analogue/digital inputs",
 		"16× digital/PWM outputs (up to 50 mA per channel)",
@@ -60,6 +60,7 @@ deviceInfo: (
 		"Control up to 400 RGB LEDs (NeoPixel)",
 		"4× serial communication channels"
 	],
+	longName: "XIO x-OSC",
 	notes: "",
 ),
 
@@ -132,19 +133,19 @@ elementsDesc: (
 	// 16 integer arguments represent the state of the 16 digital inputs (0 or 1). Sent only when the state of any digital input pin changes
 		(
 			key: \inD,
-			shared: (type: \switch, spec: \switch, ioType: \collectiveIn),
+			shared: (elementType: \switch, spec: \switch, ioType: \collectiveIn),
 			elements: (1..16).collect ( (key: _) )),
 
 // 16 floating-point arguments indicate the analogue readings for all 16 inputs. Sent at the analogue input message rate
 		(
 			key: \inA,
-			shared: (type: \voltage, spec: \lin1, ioType: \collectiveIn),
+			shared: (elementType: \voltage, spec: \lin1, ioType: \collectiveIn),
 			elements: (1..16).collect ( (key: _) )),
 
 // 16 integer arguments represent the current compare state of the 16 analogue inputs (0 if below or 1 if above the threshold). Sent only when a threshold on any channel is crossed
 		(
 			key: \inC,
-			shared: (type: \switch, spec: \switch, ioType: \collectiveIn),
+			shared: (elementType: \switch, spec: \switch, ioType: \collectiveIn),
 			elements: (1..16).collect ( (key: _) )),
 
 	// // 1 blob argument containing the raw serial data received on input <channel> (1 – 4)
@@ -157,7 +158,7 @@ elementsDesc: (
 	// 1 float indicating the current battery voltage
 		(
 			key: \battery, oscPath: '/battery', ioType: \in,
-			type: \voltage, spec: [0, 3.7].asSpec),
+			elementType: \voltage, spec: [0, 3.7].asSpec),
 	]
 )
 );

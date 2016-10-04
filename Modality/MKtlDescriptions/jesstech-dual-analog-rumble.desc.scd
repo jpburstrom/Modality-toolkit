@@ -5,7 +5,7 @@ deviceType: \gamepad,
 elementTypes: [\joyAxis, \button, \hat],
 status: (
 	linux: "unknown",
-	osx: "unknown",
+	osx: "tested desc only, seems ok. needs gui layout. 2016-03-23, adc",
 	win: "unknown"),
 
 idInfo: "Dual Analog Rumble Pad_Jess Tech",
@@ -16,7 +16,7 @@ deviceInfo: (
 	// description:
 	// features:
 	// notes:
-
+	longName: "Jess Tech Dual Analog Rumble Pad"
 ),
 elementsDesc: (
 	elements: [
@@ -36,7 +36,7 @@ elementsDesc: (
 			]
 		),
 		(
-			key: 'hat',
+			key: 'hat', elementType: \hatSwitch,
 			'hidUsage': 57, 'hidUsagePage': 1, 'type': 'hatSwitch',
 			'ioType': 'in', spec: \cent1, mode: \center
 		),

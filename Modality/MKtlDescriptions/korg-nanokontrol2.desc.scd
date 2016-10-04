@@ -1,41 +1,9 @@
 /*	KORG nanoKONTROL2 specs:
+
 * all cc messages
 * transport buttons - tr,
 * track buttons
 * 8x sliders, knobs, 3 buttons
-
-
-// simple tests
-n.free;
-n = MKtl(\nk2, "*trol2");
-n.gui;
-n.trace;
-// an action for all buttons
-n.elAt(\bt).action = { |el ... groups|
-	[el.name, el.value, "groups:", groups.collect(_.name)].postln;
-};
-// just for slider 1
-n.elAt(\sl, \1).action = { |el| [el.name, el.value].postln };
-
-
-// test for enabling LED control:
-// make an MKtl for it
-n = MKtl(\nk2, "korg-nanokontrol2");
-// check if you already have LEDs enabled -
-// if they all go on and off, they are enabled:
-n.outputElements.do(_.value_(1));
-n.outputElements.do(_.value_(0));
-
-// if not, enable them:
-n.sendSpecialMessage('makeButtonLEDsWriteable');
-// now they should go on and off:
-n.outputElements.do(_.value_(1));
-n.outputElements.do(_.value_(0));
-
-// To restore the nanoK to factory settings:
-* power it down
-* hold down track buttons "<" and ">" and "cycle"
-* power up and wait for ca. 5 seconds
 
 */
 (
@@ -45,7 +13,7 @@ deviceType: \faderbox,
 elementTypes: [\fader, \knob, \button],
 status: (
 	linux: "unknown",
-	osx: "tested and working",
+	osx: "tested and working, 15.3.2016 by LFSaw.de",
 	win: "unknown"),
 
 idInfo: "nanoKONTROL2",
@@ -56,8 +24,37 @@ deviceInfo: (
 	// description: "",
 	// features: [],
 	// notes: "",
+	longName: "KORG nanoKONTROL 2"
 
 ),
+
+// testCode - packed into function to allow readable code here (no escape chars)
+testCode: {
+	// an action for all buttons
+	~mktl.elAt(\bt).action = { |el ... groups|
+		[el.name, el.value, "groups:", groups.collect(_.name)].postln;
+	};
+	// just for slider 1
+	~mktl.elAt(\sl, \1).action = { |el| [el.name, el.value].postln };
+
+	// test for enabling LED control:
+	// check if you already have LEDs enabled -
+	// if they all go on and off, they are enabled:
+	n.outputElements.do(_.value_(1));
+	n.outputElements.do(_.value_(0));
+
+	// if not, enable them:
+	n.sendSpecialMessage('makeButtonLEDsWriteable');
+	// now they should go on and off:
+	n.outputElements.do(_.value_(1));
+	n.outputElements.do(_.value_(0));
+
+	// To restore the nanoK to factory settings:
+	// * power it down
+	// * hold down track buttons "<" and ">" and "cycle"
+	// * power up and wait for ca. 5 seconds
+	/*************** end of test code *****************/
+},
 
 elementsDesc: (
 	shared: (\midiMsgType: \cc, \midiChan: 0),
@@ -109,7 +106,7 @@ elementsDesc: (
 		),
 		(
 			key: \bt,
-			shared: (\elementType: \button, \spec: \midiBut),
+			shared: (\elementType: \button, \spec: \midiBut, ioType: \inout),
 
 			elements: [\S, \M, \R].collect { |label, i|
 				var nums = [(32..39),(48..55),(64..71)][i];

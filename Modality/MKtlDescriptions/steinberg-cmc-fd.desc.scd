@@ -1,6 +1,15 @@
+
 /*
-todo: write little example here
+// test this desc:
+~filename = thisProcess.nowExecutingPath.basename.split($.).first.postcs;
+d = MKtlDesc.loadDescs(~filename).first;
+// close old m, open new one, make gui:
+m.free; m = MKtl(\fd, "*cmc-fd"); m.gui;
+m.trace;
+m.elementsDict.size;
+m.postElements;
 */
+
 (
 deviceName: "Steinberg CMC-FD",
 protocol: \midi,
@@ -8,7 +17,7 @@ deviceType: \controller,
 elementTypes: [\fader, \button],
 status: (
 	linux: "unknown",
-	osx: "tested and working",
+	osx: "tested, code seems ok, my device broken. 2016-03-15, adc",
 	win: "unknown"),
 
 idInfo:"Steinberg CMC-FD",
@@ -17,55 +26,63 @@ deviceInfo: (
 	vendorURI: "http://www.steinberg.net/en/products/controllers/cmc_series/models/cmc_fd.html",
 	// manualURI: "",
 	// description: "",
-	// features: ["4 touch faders" ],
+	features: ["4 touch faders" ],
+	longName: "Steinberg CMC-FD",
 	notes: "discontinued.",
 
 ),
 elementsDesc: (
-	shared: ('midiMsgType': 'noteOnOff', 'elementType': 'button',
-		'midiChan': 0, 'spec': 'midiBut'),
+	shared: ('elementType': 'pad',
+		'midiChan': 0, 'spec': 'midiVel'),
 	elements: [
+		// the faders use bend for high res fader values (10 bit )
+		(
+			key: 'fader',
+			shared: ('midiMsgType': 'bend', 'elementType': 'slider',
+				'midiChan': 0, 'spec': 'midiBend'
+			),
+			elements: (0..3).collect { |chan, i|
+				('midiChan': chan,'spec': 'midiBend',
+					style: (height: 4, row: 0, column: i)
+				)
+			}
+		),
+
 		// the buttons
+		MKtlDesc.notePair(\shift, 70, (style: (row: 6, column: 1.5))),
 		(
 			key: \bt,
 			elements: [
-				(key: 'bankLeft',  'midiNum':  46),
-				(key: 'bankRight', 'midiNum':  47),
-				(key: 'chanLeft',  'midiNum':  48),
-				(key: 'chanRight', 'midiNum':  49)
+				MKtlDesc.notePair('chanL', 48, (style: (row: 7, column: 0))),
+				MKtlDesc.notePair('chanR', 49, (style: (row: 7, column: 1))),
+				MKtlDesc.notePair('bankL', 46, (style: (row: 7, column: 2))),
+				MKtlDesc.notePair('bankR', 47, (style: (row: 7, column: 3))),
 			]
 		),
+
+				// fader touched or not
 		(
-			key: 'shift',
-			'midiMsgType': 'noteOnOff', 'elementType': 'button', 'midiNum':  70, 'spec': 'midiBut'
-		),
-		// fader touched or not
-		(
-			key: 'faderTouch',
-			shared: ('midiMsgType': 'noteOnOff', 'elementType': 'button',
-				'midiChan': 0, 'spec': 'midiBut'),
-			elements: (104..107).collect { |note, i|
-				('midiNum': note)
-			};
+			key: 'ftouch',
+			// shared: ('elementType': 'button', 'spec': 'midiVel'),
+			elements: (104..107).collect { |num, i|
+				MKtlDesc.notePair(
+					(i+1).asSymbol, num,
+					(style: (row: 3.9, column: i))
+				);
+			}
 		),
 		// fader touched when shift is down sends channel mute
 		(
-			key: 'faderMute',
-			shared: ('midiMsgType': 'noteOnOff', 'elementType': 'key',
-				'midiChan': 0, 'spec': 'midiNote'),
-			elements: (8..11).collect { |noteNum|
-				('midiNum':  noteNum)
+			key: 'fmute',
+			// shared: ('elementType': 'button', 'midiChan': 0, 'spec': 'midiBut'),
+			elements: (8..11).collect { |num, i|
+				MKtlDesc.notePair(
+					(i+1).asSymbol, num,
+					(style: (row: 4.8, column: i))
+				);
 			}
 		),
-		// bend : high res fader values (10 bit )
-		(
-			key: 'fader',
-			shared: ('midiMsgType': 'bend', 'elementType': 'fader',
-				'midiChan': 0, 'spec': 'midiBend'),
-			elements: (0..3).collect { |chan|
-				('midiChan': chan,'spec': 'midiBend')
-			}
-		)
+
 	]
 );
 )

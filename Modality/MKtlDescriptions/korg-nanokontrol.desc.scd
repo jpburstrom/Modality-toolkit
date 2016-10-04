@@ -16,7 +16,7 @@ deviceType: \faderbox,
 elementTypes: [\fader, \knob, \button],
 status: (
 	linux: "tested and working",
-	osx: "tested and working",
+	osx: "tested and working, 15.3.2016 by LFSaw.de",
 	win: "unknown"),
 
 idInfo: "nanoKONTROL",
@@ -29,8 +29,7 @@ deviceInfo: (
 	// description: "",
 	// features: [],
 	// notes: "",
-
-	hasScribble: true
+	longName: "KORG nanoKONTROL"
 ),
 elementsDesc: (
 	elements: [

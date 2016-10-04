@@ -12,7 +12,6 @@ MKtl('bcf').gui
 
 MKtl('bcf').elAt(\sl,0,0).value_(0.5)
 
-
 */
 
 
@@ -24,10 +23,11 @@ deviceType: \faderbox,
 elementTypes: [\fader, \button, \encoder],
 status: (
 	linux: "unknown",
-	osx: "unknown",
+	osx: "tested and working, except midiOut has no port number. 2016-03-22, dhml&adc.",
 	win: "unknown"),
 
-idInfo: "BCF2000",
+// assuming IO is on port 1, port 2 is ext in/out, port 3 is out only
+idInfo: (deviceName: "BCF2000", srcPortIndex: 0, destPortIndex: 0),
 
 hardwarePages: [1, 2, 3, 4],
 
@@ -36,32 +36,40 @@ deviceInfo: (
 	vendorURI: "http://www.music-group.com/Categories/Behringer/Computer-Audio/Desktop-Controllers/BCF2000/p/P0246",
 	manualURI: "https://media.music-group.com/media/PLM/data/docs/P0246/BCF2000_BCR2000_M_EN.pdf",
 	// description: "",
-	// features: [],
+	features: [
+		"8 motor-faders",
+		"8 rotary-encoder",
+		"30 Buttons"
+	],
 	// notes: "",
-	hasScribble: true
+	longName: "Behringer BCF2000"
 ),
 elementsDesc: (
+	shared: (midiMsgType: \cc, midiChan: 0),
 	elements: [
 	//buttons at bottom right
 		(
 			key: \pr,
 			shared: (elementType: \button, spec: \midiBut, mode: \toggle),
 			elements: [
-				(elements: [ (\style: (row:4, column: 8), midiNum: 89), (\style: (row:4, column: 9), midiNum: 90) ] ),
-				(elements: [ (\style: (row:5, column: 8), midiNum: 91), (\style: (row:5, column: 9), midiNum: 92) ] )
+				(elements: [
+					( midiNum: 89, \style: (row:4, column: 8)),
+					( midiNum: 90, \style: (row:4, column: 9)) ] ),
+				(elements: [
+					( midiNum: 91, \style: (row:5, column: 8)),
+					( midiNum: 92, \style: (row:5, column: 9)) ] )
 			]
 		),
 
 		//upper row of encoders when pressed, 4 pages, 8 rows
 		(
 			key: \tr,
-			shared: (\midiMsgType: \cc, elementType: \button, midiChan: 0,
-				spec: \midiCC, ioType: \in),
+			shared: (elementType: \button, spec: \midiBut, ioType: \in),
 			elements: 4.collect { |j|
 				(
 					elements: 8.collect { |i|
 						// top knob push mode
-						(midiNum: 33+(8*j)+i, page: j, \style: (row:0, column: i))
+						( midiNum: 33+(8*j)+i, page: j, \style: (row:0, column: i))
 					}
 				)
 			}
@@ -69,8 +77,7 @@ elementsDesc: (
 		//upper row of encoders, 4 pages, 8 rows
 		(
 			key: \kn,
-			shared: (\midiMsgType: \cc, elementType: \encoder, midiChan: 0,
-				spec: \midiCC, ioType: \in),
+			shared: (elementType: \encoder, spec: \midiCC, ioType: \in),
 			elements: 4.collect { |j|
 				(
 					elements: 8.collect { |i|
@@ -83,8 +90,7 @@ elementsDesc: (
 	//buttons
 		(
 			key: \bt,
-			shared: (\midiMsgType: \cc, elementType: \midiBut, midiChan: 0,
-				spec: \midiCC, ioType: \inout),
+			shared: (elementType: \button, spec: \midiCC, ioType: \inout),
 			elements: [65,73].collect { |ccStart,j|
 				(
 					elements: 8.collect { |i|
@@ -96,8 +102,7 @@ elementsDesc: (
 	//sliders
 		(
 			key: \sl,
-			shared: (\midiMsgType: \cc, elementType: \slider, midiChan: 0,
-				spec: \midiCC, ioType: \inout),
+			shared: (elementType: \slider, spec: \midiCC, ioType: \inout),
 			elements: 8.collect { |i| (midiNum: 81+i, \style: (row:4, column: i)) }
 		)
 	]

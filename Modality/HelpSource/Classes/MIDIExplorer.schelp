@@ -1,7 +1,7 @@
 TITLE:: MIDIExplorer
 summary:: Explore a MIDI device
 categories:: Libraries>Modality
-related::  Overviews/Modality, Reference/MKtl_description_files
+related::  Overviews/Modality, Classes/MKtl, Classes/MIDIMKtlDevice, Reference/MKtl_description_files
 
 DESCRIPTION::
 The functionality of link::Classes/MKtl:: relies on descriptions of the used devices. For some Controllers, and while many descriptions are already available, your device may not yet be among them.
@@ -17,7 +17,7 @@ MIDIExplorer.postSrcInfo;
 // and enter its uid here
 MIDIExplorer.start( -476939297  );
 
-// or to get the uid of e.g. the first connected HID:
+// or to get the uid of e.g. the first connected MIDI device:
 MIDIClient.sources[0].uid.postln;
 MIDIExplorer.start(MIDIClient.sources[0].uid);
 
@@ -38,6 +38,8 @@ MIDIExplorer.verbose = false;
 // if no more new controllers are found, do:
 MIDIExplorer.openDoc;
 MIDIExplorer.compile;
+
+
 
 // and save here:
 MKtlDesc.openFolder;
@@ -61,7 +63,7 @@ METHOD:: stop
 stop exploration.
 
 METHOD:: deviceName
-find the devicename for the observed srcID
+find the deviceName for the observed srcID
 
 METHOD:: instructions
 return instructions string to put on top of desc file.
@@ -79,13 +81,12 @@ METHOD:: openDoc
 opens a new document containing a description string made with MIDIExplorer.compile.
 
 METHOD:: compileDesc
-compile the elementsDesc from MIDIExplorer  data.
+compile the elementsDesc from data collected by MIDIExplorer.
 
 METHOD:: verbose
-flag whether to print values when collecting.
-
-METHOD:: shutUp
-set verbose to false
+get and set flag whether to post info
+METHOD:: trace
+set verbose flag, default flag is true
 
 METHOD:: allMsgTypes
 list of midi message types to catch

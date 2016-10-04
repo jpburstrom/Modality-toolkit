@@ -30,11 +30,11 @@ MKtl { // abstract class
 
 	var <elementGroup;			// all elements in ElementGroup in hierarchical order
 	var <elementsDict; 		// all elements in a single dict for fast access
+	var <namedDict;
 
 	var <collectivesDict; 	// has the collectives (combined elements and groups)
 	// from the device description
 
-	var <midiPortNameIndex;  // only needed when multiple midi ports
 	var <device; // interface to the connected device(s).
 
 	var <traceRunning = false;
@@ -43,7 +43,7 @@ MKtl { // abstract class
 
 	*protocols   { ^MKtlDevice.allProtocols }
 	*deviceTypes { ^MKtlDevice.deviceTypes }
-	*elementTypes { ^MKtlElement.elementTypes }
+	*elementTypesUsed { ^MKtlElement.elementTypesUsed }
 
 	*initClass {
 		Class.initClassTree(Spec);
@@ -182,6 +182,12 @@ MKtl { // abstract class
 				if (lookupInfo.isNil) {
 					MKtlDevice.initHardwareDevices;
 					lookupInfo = MKtlLookup.all[lookupName];
+					if (lookupInfo.isNil) {
+						"%: could not find device for key %,"
+						" cannot create MKtl(%)!\n"
+						.postf(thisMethod, lookupNameOrDesc, name);
+						^nil
+					}
 				};
 				if (lookupInfo.notNil) {
 					protocol = lookupInfo.protocol;
@@ -196,6 +202,11 @@ MKtl { // abstract class
 			String, {
 				descName = lookupNameOrDesc;
 				newMKtlDesc = MKtlDesc(descName);
+				if (newMKtlDesc.isKindOf(MKtlDesc).not) {
+					"% : newMKtlDesc is nil, cannot make MKtl named %.\n"
+					.postf(thisMethod, name.cs);
+					^nil
+				};
 				protocol = newMKtlDesc.protocol;
 				MKtlDevice.initHardwareDevices(false, protocol);
 			},
@@ -216,9 +227,9 @@ MKtl { // abstract class
 		// else try to make a desc from lookup info:
 
 		if (MKtl.descIsFaulty(newMKtlDesc)) {
-			inform("% - %: could not find a valid desc: \n"
-				"desc is: %\n\n".format(thisMethod,
-					name.cs, newMKtlDesc));
+			inform("MKtl( % ) - desc not valid: %."
+				.format(name.cs, newMKtlDesc)
+			);
 		};
 
 		// assume that now we have a name
@@ -312,15 +323,20 @@ MKtl { // abstract class
 
 	finishInit { |lookForNew, multiIndex|
 		if (desc.isNil) {
-			"%: no desc given, cannot create elements."
+			"%: no desc given, cannot create elements..."
 				.format(thisMethod).inform;
-			"// Maybe you want to explore this device with:\n"
-			"%.explore;\n".postf(this);
+			// "// Maybe you want to explore this device with:\n"
+			// "%.explore;\n".postf(this);
 		} {
+			namedDict = ();
 			this.makeElements;
 			this.makeCollectives;
 		};
 		this.openDevice( lookForNew, multiIndex );
+	}
+
+	addNamed { |name, group|
+		namedDict.put(name, group);
 	}
 
 	updateLookupInfo { |newInfo|
@@ -386,7 +402,7 @@ MKtl { // abstract class
 	}
 
 	elementAt { |...args|
-		^elementGroup.deepAt(*args)
+		^this.elAt(*args)
 	}
 
 	collAt { |...args|
@@ -397,11 +413,19 @@ MKtl { // abstract class
 
 	elAt { |...args|
 		^elementGroup.deepAt2(*args)
-		?? { collectivesDict.deepAt2(*args) }
+		?? { namedDict.deepAt2(*args) }
 	}
 
 	at { |index|
 		^elementGroup.at( index );
+	}
+
+	// this is intended to overwrite other pages
+	// with the same names in namedDict.
+	toFront { |...pageNames|
+		elementGroup.elAt(*pageNames).do { |grp|
+			this.addNamed (grp.keyInGroup, grp);
+		}
 	}
 
 	//////////////// interface to elementGroup:
@@ -472,9 +496,18 @@ MKtl { // abstract class
 	}
 
 
-	reset {
+	resetActions {
 		elementsDict.do( _.resetAction )
 	}
+	resetAction {
+		"% - please use resetActions.\n".postf(thisMethod);
+		this.resetActions;
+	}
+	reset {
+		"% - please use resetActions.\n".postf(thisMethod);
+		this.resetActions;
+	}
+
 
 	// get subsets of elements ---------
 
@@ -559,8 +592,8 @@ MKtl { // abstract class
 	// ------ make MKtlDevice and interface with it
 
 	openDevice { |lookAgain=true, multiIndex|
-		var protocol;
-		if ( this.device.notNil ) {
+		var protocol, foundMatchingDesc;
+		if ( this.hasDevice ) {
 			"%: Device already opened.\n"
 			"Please close it first with %.closeDevice;\n"
 			.format(this, this).warn;
@@ -573,17 +606,60 @@ MKtl { // abstract class
 		MKtlDevice.initHardwareDevices( lookAgain, protocol);
 
 		device = MKtlDevice.open( this.name, this, multiIndex );
+
 		if(this.hasDevice.not) {
-			inform("%.openDevice: remaining virtual.".format(this));
+			inform("%: remaining virtual.".format(thisMethod));
+		} {
+			// if no desc file, try to match with generic desc
+			// this only works for HID:
+			// - MIDI does no spec reporting,
+			// OSC does not register devices
+			if (this.desc.isNil) {
+				if (device.source.notNil) {
+					if (device.source.isKindOf(HID)) {
+						foundMatchingDesc = MKtlDesc.findGenericForHID(device.source);
+					};
+				};
+				if (foundMatchingDesc.notNil) {
+					"\nNow adapting desc % : \n\n".postf(foundMatchingDesc.name.cs);
+					this.adaptDesc(foundMatchingDesc.name);
+				}
+			};
+			// and if we still have no desc:
+			if (this.desc.isNil) {
+				"// % : opened device without desc file. \n"
+				"// Maybe you want to explore this device?\n".postf(this);
+				"%.explore;\n\n".postf(this);
+			};
 		}
 	}
 
+	// for midi - attach MIDI hardware thru idInfo from an MIDI interface port
 	openDeviceVia { |idInfo, lookAgain=true, multiIndex|
 		if (idInfo.notNil) {
 			"%: replacing idInfo: % with: % to openDevice.\n"
 			.postf(this, desc.idInfo.cs, idInfo.cs);
-			this.desc.fullDesc.put(idInfo);
+			this.desc.fullDesc.put(\idInfo, idInfo);
+			this.rebuild;
 		};
+	}
+
+	// we have the device already, but no desc;
+	// we assume we can use a desc like "generic-mouse"
+	adaptDesc { |descName|
+		var idInfo, genericDesc, newDesc;
+		if (device.isNil) {
+			warn("% : adaptDesc: no device yet, so cannot adapt desc.".format(this));
+			^this
+		};
+		idInfo = this.device.deviceName;
+		genericDesc = MKtlDesc(descName);
+		if (genericDesc.isNil) {
+			warn("% : adaptDesc: no desc found for %.".format(this, genericDesc));
+			^this
+		};
+		newDesc = genericDesc.deepCopy.idInfo_(idInfo);
+		this.rebuild(newDesc);
 	}
 
 	hasDevice {
@@ -597,6 +673,8 @@ MKtl { // abstract class
 
 	closeDevice {
 		if ( device.isNil ){ ^this };
+		// revisit to make sure this method does not close
+		// the lowest-level device when other MKtls share it.
 		device.closeDevice;
 		device = nil;
 	}
@@ -645,9 +723,9 @@ MKtl { // abstract class
 	}
 
 	free {
-		elementGroup = elementsDict = nil;
+		this.resetActions;
 		this.closeDevice;
+		elementGroup = elementsDict = nil;
 		all.removeAt( name );
-
 	}
 }

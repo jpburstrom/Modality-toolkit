@@ -12,7 +12,7 @@ HIDExplorer {
 
 	classvar <specMap;
 
-	*shutUp { verbose = false }
+	*trace { |flag = true| verbose = flag }
 
 	*initClass {
 		specMap = (
@@ -80,11 +80,33 @@ HIDExplorer {
         var elements = dev.elements;
 
 		var inElements, outElements, featureElements;
+		var idInfo = dev.info.productName.asString
+		   ++ "_" ++ dev.info.vendorName.asString;
 
 		// header
-		str = str ++ "idInfo: \"" ++ dev.info.productName.asString ++ "_"
-			++ dev.info.vendorName.asString ++ "\",\n";
+		str = str ++ "idInfo: \"" ++ idInfo ++ "\",\n";
 		str = str ++ "protocol: 'hid',\n";
+		str = str ++ "deviceName: \"" ++ idInfo ++ "\",\n";
+		str = str ++
+"deviceType: '___',
+elementTypes: [],
+status: (
+	linux: \"unknown\",
+	osx: \"unknown\",
+	win: \"unknown\"
+),
+
+// hardwarePages: [1, 2, 3, 4],
+
+// deviceInfo: (
+// vendorURI: 'http://company.com/products/this',
+// manualURI: 'http://company.com/products/this/manual.pdf',
+	// description: ,
+	// features: [],
+	// notes: ,
+	// hasScribble: false
+// ),
+";
 		str = str ++ "elementsDesc: (\n";
 		str = str ++ "	elements: [\n";
 
@@ -119,7 +141,7 @@ HIDExplorer {
 		};
 
 		uniques.sortedKeysValuesDo { |key, elem|
-			var specName = specMap[elem.pageName.asSymbol.postcs]
+			var specName = specMap[elem.pageName.asSymbol]
 			?? { "_%_".format(elem.usageName) };
 			str = str + "\n\t\t( key: '_%_', 'hidUsage': %, 'hidUsagePage': %, "
 			"'elementType': '%', 'ioType': '%', 'spec': '%' ),"
@@ -127,7 +149,7 @@ HIDExplorer {
 				ioType, specName );
 		};
 		duplicates.sortedKeysValuesDo { |key, elem|
-			var specName = specMap[elem.pageName.asSymbol.postcs]
+			var specName = specMap[elem.pageName.asSymbol]
 			?? { "_%_".format(elem.usageName) };
 			str = str + "\n\t\t( key: '_%_%_', 'hidElementID': %, "
 			"'elementType': '%', 'ioType': '%', 'spec': '%' ),"
@@ -147,7 +169,7 @@ HIDExplorer {
 			str = str + "\n// ------ element ids -------------";
 			observeDict[\elid].sortedKeysValuesDo { |key, val|
 				#num, chan = key.split($_).collect(_.asInteger);
-				str = str + "\n'<element name %>': ('hidElementID': %, 'type': '<type>'),"
+				str = str + "\n'<element name %>': ('hidElementID': %, 'elementType': '<type>'),"
 					.format(key, val);
 			};
 		};
@@ -156,7 +178,7 @@ HIDExplorer {
 			str = str + "\n\n// --------- usage ids ----------";
 			observeDict[\usage].sortedKeysValuesDo { |key, val|
 				#num, chan = key.split($_).collect(_.asInteger);
-				str = str + "\n'<element name %>': ('hidUsage': %, 'hidUsagePage': %, , 'type': '<type>' ),"
+				str = str + "\n'<element name %>': ('hidUsage': %, 'hidUsagePage': %, , 'elementType': '<type>' ),"
 				.format(key, val.usage, val.hidUsagePage ); /// could infer type from the control
 			};
 		};

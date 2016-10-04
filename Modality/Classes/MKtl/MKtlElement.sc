@@ -23,7 +23,7 @@ MAbstractElement {
 	var <deviceValue;
 	var <prevDeviceValue;
 
-	var <lastUpdateTime;
+	var <lastUpdateTime = 0;
 
 	// server support, currently only one server per element supported.
 	var <bus;
@@ -49,10 +49,11 @@ MAbstractElement {
 		^if (source.notNil) {
 			source.getSpec(specName)
 		} {
-			MKtl.globalSpecs[specName] ?? { [0,1].asSpec };
+			MKtl.globalSpecs[specName] ?? { \unipolar.asSpec };
 		};
 	}
 
+	// overwrite when using osc timetags?
 	updateTime { lastUpdateTime = Process.elapsedTime }
 
 	hasOut { ^elemDesc.notNil and: { [\out, \inout].includes( elemDesc[\ioType] ) } }
@@ -80,6 +81,7 @@ MAbstractElement {
 		lastUpdateTime = Process.elapsedTime;
 		this.changed( \value, deviceValue );
 	}
+
 	valueNoSend_ { | newval |
 		if (newval.isNil) { ^this };
 		prevDeviceValue = deviceValue;
@@ -88,6 +90,7 @@ MAbstractElement {
 		lastUpdateTime = Process.elapsedTime;
 		this.changed( \value, deviceValue );
 	}
+
 	valueAction_ { | newval |
 		if (newval.isNil) { ^this };
 		prevDeviceValue = deviceValue;
@@ -105,6 +108,8 @@ MAbstractElement {
 
 	value { ^deviceValue }
 	prevValue { ^prevDeviceValue }
+	// shortcut for switches, like MKtlElementGroup().isOn
+	isOn { ^this.value > 0 }
 
 	timeSinceLast { ^Process.elapsedTime - lastUpdateTime }
 
@@ -115,6 +120,35 @@ MAbstractElement {
 		if (enabled) { action.value( this ) };
 		parent !? _.doAction( this );
 		groups.do( _.doAction( this ) );
+		this.changed( \doAction, this );
+	}
+
+	// where the action is:
+	addAction { |argAction|
+		action = action.addFunc(argAction);
+	}
+
+	removeAction { |argAction|
+		action = action.removeFunc(argAction);
+	}
+
+	reset {
+		this.deprecated(thisMethod, this.class.findMethod(\resetAction));
+		this.resetAction;
+	}
+
+	resetAction { action = nil }
+
+	flat { ^[this] }
+
+	// pattern support
+	embedInStream { |inval|
+		this.value.embedInStream(inval);
+		^inval
+	}
+
+	asStream {
+		^Pfunc({ |inval| this.value }).asStream
 	}
 
 	// UGen support
@@ -144,18 +178,49 @@ MAbstractElement {
 	}
 
 	// support for navigation inside ordered element hierarchy
+	// adc - index, key, and MEGroup.indexOf is really confusing.
+	// MKtlElements now always have an index and a key,
+	// so we can always ask for the one we want:
+	// .index and .indices return integers,
+	// .key and .keys return dict keys,
+	// MKtlElementGroup:
+	// elemIndexOf == indexOf,  returns index of an element in group
+	// elemKeyOf returns key of an element in group
+
+	// adding posts to see how much use the method even gets
 	index {
-		^this.parent !? _.indexOf( this );
+		// "// using %\n".postf(thisMethod);
+		// ^this.parent !? _.indexOf( this );
+		^this.indexInGroup
 	}
 
-	key { ^this.index }
+	key {
+		// "// using %\n".postf(thisMethod);
+		// ^this.index
+		this.keyInGroup
+	}
 
 	indices {
+		// "// using %\n".postf(thisMethod);
 		^this.parent !? { parent.indices ++ [ this.index ] };
 	}
 
+	keys {
+		// "// using %\n".postf(thisMethod);
+		^this.parent !? { parent.keys ++ [ this.key ] };
+	}
+
+	// get index or key specifically
+	indexInGroup {
+		^this.parent !? _.elemIndexOf(this)
+	}
+
+	keyInGroup {
+		^this.parent !? _.elemKeyOf(this)
+	}
+
 	// for printOn only, this will not remake it properly from code.
-	storeArgs { ^[name, type, this.index] }
+	storeArgs { ^[name, type] }
 
 	printOn { | stream | this.storeOn(stream) }
 
@@ -214,14 +279,14 @@ MKtlElement : MAbstractElement {
 	var <deviceSpec;
 
 	*initClass {
-		// types found with MKtlDesc.elementTypesUsed
-		types = [ 'accelAxis', 'analogIn', 'bender', 'button', 'buttons', 'chantouch', 'compass', 'cvIn', 'cvOut', 'dial', 'encoder', 'hatSwitch', 'imu', 'joyAxis', 'key', 'keyTouch', 'keytouch', 'knob', 'led', 'lever', 'midiBut', 'mouseAxis', 'mouseWheel', 'movement', 'option', 'pad', 'pianoKey', 'ribbon', 'rumble', 'slider', 'springFader', 'switch', 'touchButton', 'touchFader', 'trigger', 'voltage', 'wheel', 'xfade' ]
+		// types found with MKtlDesc.elementTypesUsed.size
+		types = [ 'accelAxis', 'bender', 'button', 'compass', 'cvIn', 'cvOut', 'encoder', 'fader', 'gyroAxis', 'hatSwitch', 'joyAxis', 'key', 'keyTouch', 'knob', 'led', 'lever', 'midiBut', 'mouseAxis', 'mouseWheel', 'multiPurpose', 'option', 'pad', 'padX', 'padY', 'pianoKey', 'ribbon', 'rumble', 'scroller', 'slider', 'springFader', 'switch', 'thumbAxis', 'touch', 'trigger', 'voltage', 'wheel', 'xfader' ]
 	}
 
 	// source is used for sending back to the device.
 	*new { |name, desc, source|
 		^super.newCopyArgs(name, source)
-		.elemDesc_(desc);
+		.elemDesc_(desc).init;
 	}
 
 	elemDesc_ { |dict|
@@ -253,10 +318,11 @@ MKtlElement : MAbstractElement {
 
 		if (mySpecOrName.isNil) {
 			warn("% : deviceSpec for '%' is missing!".format(this, mySpecOrName));
-			"using [0, 1].asSpec instead".postln;
-		} {
-		mySpecOrName = mySpecOrName.asSpec;
+			"using [0, 1].asSpec instead.".postln;
+			mySpecOrName = [0,1];
 		};
+		mySpecOrName = mySpecOrName.asSpec;
+
 			// and now we will have a spec.
 		this.deviceSpec_(mySpecOrName);
 	}
@@ -327,42 +393,10 @@ MKtlElement : MAbstractElement {
 		this.doAction;
 		this.changed( \value, newval );
 	}
+
 	// no spec here, so we can redirect to superclass
 	deviceValue_ { | newval | ^super.value_(newval) }
 	deviceValueAction_ { | newval | ^super.valueAction_(newval) }
 	deviceValueNoSend_ { | newval | ^super.valueNoSend_(newval) }
 
-
-
-	// where the action is:
-	addAction { |argAction|
-		action = action.addFunc(argAction);
-	}
-
-	removeAction { |argAction|
-		action = action.removeFunc(argAction);
-	}
-
-	resetAction {
-		action = nil
-	}
-
-	// assuming that something setting the element's value will
-	// first set the value and then call doAction (like in Dispatch)
-	doAction {
-		super.doAction;
-		this.changed( \doAction, this );
-	}
-
-	flat { ^[this] }
-
-	// pattern support
-	embedInStream { |inval|
-		this.value.embedInStream(inval);
-		^inval
-	}
-
-	asStream {
-		^Pfunc({ |inval| this.value }).asStream
-	}
 }

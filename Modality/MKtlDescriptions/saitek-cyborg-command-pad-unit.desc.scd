@@ -1,30 +1,49 @@
 /*
 
 // HID reports all buttons and joystick as in and out elements,
-// but sending to them does nothing ... keeping them as
+// but sending to them does nothing ... keeping them anyway
 
 MKtl.find;
 m = MKtl('cc', "saitek-cyborg-command-pad-unit");
 m.trace;
-
+m.trace(false)
+x.free
 m.elementsDict.do { |el| el.valueAction_(0) };
 
-// see the reported elements:
-MKtl('cc').explore(false);
-MKtl('cc').createDescriptionFile;
+// HID reports all buttons and joystick as in and out elements,
+// but sending to them does nothing ... keeping them anyway
+
+m.elAt(\bt).do(_.valueAction_(0));
+m.elAt(\bt).do(_.valueAction_(1));
 
 */
 
 (
 idInfo: "Saitek Cyborg Command Pad Unit_",
+status: (
+	linux: "unknown",
+	osx: "tested and working. 2016-03-17, adc",
+	win: "unknown"
+),
+deviceType: \gamepad,
 protocol: 'hid',
+deviceInfo: (
+	// vendorURI: "http://",
+	// manualURI: "http://",
+	// description: "",
+	// features: [
+	// ],
+	longName: "Saitek Cyborg Command Pad"
+),
+
+// specs: (uni1023: [1, 1023, \lin, 1/1023]),
 
 elementsDesc: (
 	elements: [
 		(
 			// numKeys:
 			key: \bt,
-			shared: ( key: '_b1_', 'hidUsage': 1, 'hidUsagePage': 9, 'elementType': 'Button', 'ioType': 'inout', 'spec': 'hidBut' ),
+			shared: ( key: '_b1_', 'hidUsage': 1, 'hidUsagePage': 9, 'elementType': 'button', 'ioType': 'inout', 'spec': 'hidBut' ),
 			elements: ((1..16) ++ 21).collect { |num|
 				( key: num.asSymbol, hidUsage: num)
 			},
@@ -34,7 +53,7 @@ elementsDesc: (
 			// middle is 23 on, prev (22 or 24) off
 			// bottom is 22 on, 23 off [22, 1], [
 			key: \mode,
-			shared: ( key: '_b1_', 'hidUsage': 1, 'hidUsagePage': 9, 'elementType': 'Button', 'ioType': 'inout', 'spec': 'hidBut' ),
+			shared: ( key: '_b1_', 'hidUsage': 1, 'hidUsagePage': 9, 'elementType': 'button', 'ioType': 'inout', 'spec': 'hidBut' ),
 			elements: [22, 23, 24].collect { |num, i|
 				( key: num.asSymbol, hidUsage: num)
 			}
@@ -42,14 +61,16 @@ elementsDesc: (
 		(
 			// F1 .. F4 buttons
 			key: \F,
-			shared: ( key: '_b1_', 'hidUsage': 1, 'hidUsagePage': 9, 'elementType': 'Button', 'ioType': 'inout', 'spec': 'hidBut' ),
+			shared: ( key: '_b1_', 'hidUsage': 1, 'hidUsagePage': 9, 'elementType': 'button', 'ioType': 'inout', 'spec': 'hidBut' ),
 			elements: [17, 18, 19, 20].collect { |num, i|
 				( key: (i+1).asSymbol, hidUsage: num)
 			}
 		),
 		(
 			key: \joy,
-			shared: ( 'hidUsagePage': 1, 'elementType': 'thumbAxis', 'ioType': 'inout', 'spec': \cent1023 ),
+			shared: ( 'hidUsagePage': 1, 'elementType': 'thumbAxis', 'ioType': 'inout',
+				\spec: \unipolar
+			),
 			elements: [
 				(key: 'x', 'hidUsage': 48),
 				(key: 'y', 'hidUsage': 49)

@@ -5,7 +5,7 @@ deviceType: \joystick,
 elementTypes: [\joystick, \button, \hat, \slider],
 status: (
 	linux: "unknown",
-	osx: "unknown",
+	osx: "tested desc, looks good. 2016_03_23, adc",
 	win: "unknown"),
 
 idInfo: "USB Joystick_MegaWorldectronics",
@@ -17,7 +17,7 @@ deviceInfo: (
 	// features: [],
 	// notes: "",
 
-	// hasScribble: false
+	longName: "ThrustMaster joystick"
 ),
 elementsDesc: (
 	elements: [

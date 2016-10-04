@@ -23,7 +23,7 @@ MIDIMKtlDevice : MKtlDevice {
 
 	*initClass {
 		allMsgTypes = #[
-			\noteOn, \noteOff, \noteOnOff, \cc, \control, \polyTouch, \polytouch,
+			\noteOn, \noteOff, /* \noteOnOff, */ \cc, \control, \polyTouch, \polytouch,
 			\touch, \bend, \program,
 			\midiClock, \start, \stop, \continue, \reset,
 			\allNotesOff
@@ -44,6 +44,7 @@ MIDIMKtlDevice : MKtlDevice {
 	}
 
 	closeDevice {
+		this.cleanupElementsAndCollectives;
 		destination.notNil.if {
 			if ( thisProcess.platform.name == \linux ) {
 				midiOut.disconnect( MIDIClient.destinations.indexOf(destination) )
@@ -98,21 +99,19 @@ MIDIMKtlDevice : MKtlDevice {
 			^this;
 		};
 
-		"\n// Available MIDIMKtls: ".postln;
-		"// MKtl('myNickName', 'lookupName');  \n\t\t// [ midi device, portname, uid]\n".postln;
+		"\n/*** Possible MKtls for MIDI devices: ***/".postln;
+		"\t// [ midi device, portname, uid]\n".postln;
 		postables.sortedKeysValuesDo { |lookupKey, infodict|
 			var endPoint = infodict.deviceInfo;
-			var nameKey = lookupKey;
+			var nameKey = lookupKey.asString.keep(13).asSymbol;
 			var postList = endPoint.bubble.flatten.collect({ |ep|
-				[ep.device.cs, ep.name.cs, ep.uid]
+				[ep.device, ep.name, ep.uid]
 			});
 			var filenames = infodict.filenames;
+			postList.cs.postcln;
 
-			"MKtl(%, %);\n\t\t// %\n"
-			.postf(nameKey.cs, lookupKey.cs, postList.unbubble);
-
-			// post with desc file names:
-			this.descFileStrFor(nameKey, filenames,
+			// post with desc file names if any:
+			this.descFileStrFor(nameKey, lookupKey, filenames,
 				infodict.multiIndex).post;
 		};
 	}
@@ -142,12 +141,6 @@ MIDIMKtlDevice : MKtlDevice {
 
 		foundSources = foundInfo[\srcDevice];
 		foundDestinations = foundInfo[\destDevice];
-
-		if (parentMKtl.midiPortNameIndex.notNil) {
-			foundSources = foundSources[parentMKtl.midiPortNameIndex];
-			foundDestinations = foundDestinations
-				[parentMKtl.midiPortNameIndex];
-		};
 
 		newDev = super.basicNew(name, lookupInfo.idInfo, parentMKtl );
 		newDev.initMIDIMKtl(name, foundSources, foundDestinations );
@@ -209,7 +202,9 @@ MIDIMKtlDevice : MKtlDevice {
 		this.makeRespFuncs;
 	}
 
-	// nothing here yet, but needed
+	// nothing here yet, but needed as stub.
+	// could be used for monophonic voicer with
+	// note, vel pair as values.
 	initCollectives {
 
 	}
@@ -253,7 +248,7 @@ MIDIMKtlDevice : MKtlDevice {
 				midiOut = MIDIOut( 0 );
 				midiOut.connect( MIDIClient.destinations.indexOf(destination) )
 			} {
-				midiOut = MIDIOut( MIDIClient.destinations.indexOf(destination), dstID );
+				midiOut = MIDIOut( MIDIClient.destinations.indexOfEqual(destination), dstID );
 			};
 
 			// set latency to zero as we assume to have controllers
@@ -397,7 +392,7 @@ MIDIMKtlDevice : MKtlDevice {
 
 		"% : unknown % element found at % midiChan %.\n"
 		"\tPlease add it to the description file. E.g. for a button:"
-		"<bt>: (midiMsgType: %, type: <'button'>,"
+		"<bt>: (midiMsgType: %, elementType: <'button'>,"
 		" midiChan: %, %spec: <'midiBut'>, mode: <'push'>)\n\n"
 		.format(mktl, msgType.cs, numStr, chan, msgType.cs, chan, numStr).inform;
 	}
@@ -417,7 +412,7 @@ MIDIMKtlDevice : MKtlDevice {
 		} { "" };
 
 		"% midi, % > %, raw: %, \n"
-		"   msg: %, %chan: %, type: %"
+		"   msg: %, % chan: %, type: %"
 		.format(mktl, elem.name.cs, elem.value.asStringPrec(3), value,
 			msgType.cs, numStr, chan, elem.type).postln;
 	}
@@ -482,8 +477,14 @@ MIDIMKtlDevice : MKtlDevice {
 	send { |key, val|
 		var elem, elemDesc, msgType, chan, num;
 
-		// only called by MKtl when it has a midiout,
-		// so we do not check for a midiout here
+		// check that midiout needed for sending exists,
+		// complain and exit if it is missing
+
+		if (midiOut.isNil) {
+			"%: midiOut is nil, cannot send val % to elem %."
+			.postf(mktl, key, val);
+			^this
+		};
 
 		elem = mktl.elementsDict[key];
 		if (elem.isNil) {
@@ -496,7 +497,7 @@ MIDIMKtlDevice : MKtlDevice {
 		elemDesc = elem.elemDesc;
 
 		if (traceRunning) {
-			inform("MIDIMKtl will send: " + elem.asCompileString);
+			inform("% will send value % to elem %.".format(this, val, elem.cs) );
 		};
 
 		msgType = elemDesc[\midiMsgType];
@@ -538,8 +539,8 @@ MIDIMKtlDevice : MKtlDevice {
 			// \smpte, { midiOut.smpte }
 
 			{
-				warn("MIDIMKtlDevice: message type % not recognised"
-				.format(msgType))
+				warn("%: message type % not recognised"
+				.format(thisMethod, msgType))
 			}
 		)
 

@@ -1,6 +1,23 @@
 /*
+
+Notes:
+* rumble does nothing on wireless, works on wired.
+
 -- elementsDesc copied over from plain run_n_drive
+-- only differences:
+	deviceName: "Run'N' Drive Wireless_Thrustmaster",
+	idInfo: "Run'N' Drive Wireless_Thrustmaster",
+-- could be unified by loading dict from "runndrive-dict.scd",
+-- and then modifiying deviceName and idInfo only
+
 -- for examples, see also plain run-n-drive
+
+f = MKtl('f', "*drive-wireless");
+f.gui;
+f.postElements;
+f.trace;
+f.device.source.elements[32].value_(255)
+
 */
 
 (
@@ -10,7 +27,7 @@ deviceType: \gamepad,
 elementTypes: [\joystick, \button, \wheel, \throttle, \compass, \rumble],
 status: (
 	linux: "unknown",
-	osx: "tested and working",
+	osx: "tested and working. 2016-03-16, adc",
 	win: "unknown"),
 
 idInfo: "Run'N' Drive Wireless_Thrustmaster",
@@ -24,7 +41,7 @@ deviceInfo: (
 
 	// hasScribble: false
 ),
-specs: (\compassRND: [0, 8, \lin, 1, 1].asSpec),
+
 elementsDesc: (
 	elements: [
 
@@ -53,7 +70,7 @@ elementsDesc: (
 
 		(
 			key: 'compass', 'hidUsage': 57, 'hidUsagePage': 1, 'elementType': 'compass',
-			'ioType': 'in', spec: \compassRND, mode: \center,
+			'ioType': 'in', mode: \center, spec: \unipolar,
 			'style': (row: 1.8, column: 1.3, showLabel: true)
 		),
 
@@ -109,6 +126,7 @@ elementsDesc: (
 		),
 
 		// --------- output elements ----------
+		// only working on wired version
 
 		(
 			key: 'rumble',

@@ -5,7 +5,7 @@ deviceType: \joystick,
 elementTypes:  [\joystick, \button],
 status: (
 	linux: "unknown",
-	osx: "unknown",
+	osx: "tested desc, looks good. 2016_03_23, adc",
 	win: "unknown"),
 
 idInfo: "Logitech Extreme 3D_Logitech",
@@ -13,7 +13,8 @@ idInfo: "Logitech Extreme 3D_Logitech",
 deviceInfo: (
 	vendorURI: "http://gaming.logitech.com/en-us/product/extreme-3d-pro-joystick",
 	manualURI: "http://support.logitech.com/product/extreme-3d-pro",
-	description: "",
+	longName: "Logitech Extreme 3D",
+	// description: "",
 	// features: [],
 	// notes: "",
 
@@ -56,11 +57,11 @@ elementsDesc: (
 		),
 		(
 			key: \hat,
-			'hidUsage': 57, 'hidUsagePage': 1, 'type': 'hatSwitch',
+			'hidUsage': 57, 'hidUsagePage': 1, 'elementType': 'hatSwitch',
 			'ioType': 'in', spec: \cent1inv, mode: \center),
 		(
 			key: \slider,
-			'hidUsage': 54, 'hidUsagePage': 1, 'type': 'slider',
+			'hidUsage': 54, 'hidUsagePage': 1, 'elementType': 'slider',
 			'ioType': 'in', spec: \cent1inv, mode: \center
 		)
 	]

@@ -1,3 +1,6 @@
+/*
+m = MKtl(\nky2, "*key2"); m.gui;
+*/
 (
 deviceName: "nanoKEY2",
 protocol: 'midi',
@@ -5,7 +8,7 @@ deviceType: \midiKeyboard,
 elementTypes: [\pianoKey, \button],
 status: (
 	linux: "unknown",
-	osx: "unknown",
+	osx: "tested desc only, seems ok. 2016-03-23, adc",
 	win: "unknown"),
 
 idInfo: "nanoKEY2",
@@ -16,6 +19,7 @@ deviceInfo: (
 	// description: "",
 	// features: [],
 	// notes: "",
+	longName: "KORG nanoKEY2"
 
 ),
 elementsDesc: (
@@ -23,8 +27,11 @@ elementsDesc: (
 	elements: [
 		(
 			key: \pkey,
-			elements: (0..120).collect { |midinum|
-				('midiMsgType': 'noteOnOff', 'elementType': 'key', 'midiNum': midinum, 'spec': 'midiVel')
+			shared: ('elementType': 'pad', 'spec': 'midiVel'),
+			elements: (0..120).collect { |midinum, i|
+				MKtlDesc.notePair(i, midinum,
+					(style: (row: i div: 24, column: i % 24))
+				);
 			}
 		),
 		(

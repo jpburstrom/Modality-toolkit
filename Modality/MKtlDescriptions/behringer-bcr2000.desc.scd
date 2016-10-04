@@ -21,21 +21,26 @@ protocol: \midi,
 deviceType: \mixer,
 elementTypes: [\encoder, \button],
 status: (
-	linux: "tested and working",
-	osx: "unknown",
+	linux: "tested and working, 2016-03-15, Miguel Negrão",
+	osx: "tested desc, looks good. 2016-03-23, adc",
 	win: "unknown"),
 
-idInfo: "BCR2000",
+// assuming IO is on port 1, port 2 is ext in/out, port 3 is out only
+idInfo: (deviceName: "BCR2000", srcPortIndex: 0, destPortIndex: 0),
 
 hardwarePages: [1,2,3,4],
 
 deviceInfo: (
 	vendorURI: "http://www.music-group.com/Categories/Behringer/Computer-Audio/Desktop-Controllers/BCR2000/p/P0245",
 	manualURI: "https://media.music-group.com/media/PLM/data/docs/P0245/BCF2000_BCR2000_M_EN.pdf",
-	// description: "",
-	// features: [],
+	description: "A midi device with many rotary encoders.",
+	features: [
+		"32 rotary encoders",
+		"30 Buttons"
+	],
 	// notes: "",
-	hasScribble: false
+	longName: "Behringer BCR2000"
+
 ),
 
 elementsDesc: (
@@ -80,7 +85,7 @@ elementsDesc: (
 	//buttons
 		(
 			key: \bt,
-			shared: (elementType: \midiBut, spec: \midiCC),
+			shared: (elementType: \button, spec: \midiCC),
 			elements: [65,73].collect { |ccStart, j|
 				(elements: 8.collect { |i|
 					(midiNum: ccStart+i, \style: (row:2+j, column: i))

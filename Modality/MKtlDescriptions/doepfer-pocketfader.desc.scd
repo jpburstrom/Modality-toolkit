@@ -1,29 +1,33 @@
-(
 ///////// Example for an external MIDI device ///////
+/*
+	Doepfer Pocket fader box has 16 sliders.
 
+// For a usage example, see
+"Tutorials/Connecting_external_MIDI_devices".openHelpFile;
+
+*/
+
+(
 deviceName: "pocketfader",
 protocol: \midi,
 deviceType: \faderbox,
 elementTypes: [\fader],
 status: (
 	linux: "unknown",
-	osx: "tested and working",
+	osx: "tested and working. 2016-03-16, adc",
 	win: "unknown"),
 
-// replace with uid of a midi interface port,
-// then redo openDevice to create this.
 idInfo: "EXTERNAL",
 
 deviceInfo: (
 	vendorURI: "http://www.doepfer.de/pe.htm",
 	manualURI: "http://www.doepfer.de/pdf/PE_manual.pdf",
-	description: "Originally a 16 chan MIDI faderbox (now discontinued);"
-	"\nnow a kit for making 16 chan midi controllers.",
+	description: "MIDI faderbox (discontinued)",
 	features: [
 		"hardware midi plugs (no USB)",
 		"MIDI configurable by DIP switches."],
-	notes: "",
-
+	notes: "Available as a kit to build a customised 16 chan midi controller.",
+	longName: "Doepfer Pocketfader",
 ),
 
 elementsDesc: (

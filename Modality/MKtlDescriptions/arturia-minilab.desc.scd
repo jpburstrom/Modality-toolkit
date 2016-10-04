@@ -1,10 +1,19 @@
-/*
 
 /// pads (36..43) overlap with keys (36-72)?
 
-MKtl.find;
+/*
+TODO:
+* add gui layout
 
-k = MIDIMKtl('rtrm0');
+
+thisProcess.nowExecutingPath.basename.split($.).first.postcs;
+d = MKtlDesc.loadDescs("*minilab").first;
+d.web;
+
+m.free; m = MKtl(\mpk, "*minilab"); m.gui;
+m.trace;
+m.elementsDict.size;
+m.postElements;
 
 Ndef(\test, { |amp = 0.2, cutoff = 1000, reso = 5|
 	RLPF.ar(Saw.ar(100, amp ! 2), cutoff, 1/reso);
@@ -12,9 +21,9 @@ Ndef(\test, { |amp = 0.2, cutoff = 1000, reso = 5|
 Ndef(\test).addSpec(\cutoff, [800, 10000, \exp]);
 Ndef(\test).addSpec(\reso, [0.5, 100, \exp]);
 
-k.elements[\kn][0][0].action = { |el| Ndef(\test).setUni(\amp, el.value.postln) };
-k.elements[\kn][0][1].action = { |el| Ndef(\test).setUni(\cutoff, el.value.postln) };
-k.elements[\kn][0][2].action = { |el| Ndef(\test).setUni(\reso, el.value.postln) };
+m.elAt(\kn, 0, 0).action = { |el| Ndef(\test).setUni(\amp, el.value.postln) };
+m.elAt(\kn, 0, 0).action = { |el| Ndef(\test).setUni(\cutoff, el.value.postln) };
+m.elAt(\kn, 0, 0).action = { |el| Ndef(\test).setUni(\reso, el.value.postln) };
 */
 
 (
@@ -24,7 +33,7 @@ deviceType: \midiKeyboard,
 elementTypes: [\pianoKey, \encoder, \button],
 status: (
 	linux: "unknown",
-	osx: "unknown",
+	osx: "tested desc only, looks ok, no gui info yet. 2016-03-17, adc",
 	win: "unknown"),
 
 idInfo: "Arturia MINILAB",
@@ -38,7 +47,8 @@ deviceInfo: (
 		"9 assignable faders",
 		"buttons and directional arrows",
 	],
-	notes: "Desc file only for absolute knob mode.",
+	notes: "only absolute knob mode supported.",
+	longName: "Arturia MINILAB"
 	// hasScribble: false
 ),
 elementsDesc: (
@@ -46,15 +56,13 @@ elementsDesc: (
 	elements: [
 		(
 			key: \pkey,
-			shared: (midiMsgType: 'noteOnOff',  elementType: 'pianoKey',
-				spec: 'midiVel'),
-			elements: (36..72).collect ( (midiNum: _) ) ),
+			shared: (elementType: 'pianoKey', spec: 'midiVel'),
+			elements: (36..72).collect  { |num, i| MKtlDesc.notePair(midiNum: num) } ),
 		(
 			key: \pad,
-			shared: (midiMsgType: 'noteOnOff', elementType: 'pad',
-				spec: 'midiVel'),
+			shared: (elementType: 'pad', spec: 'midiVel'),
 			/// pads overlap with keys???
-			elements: (36..43).collect ( (midiNum: _) ) ),
+			elements: (36..43).collect { |num, i| MKtlDesc.notePair(midiNum: num) } ),
 	// ... pads bank 2: (22..29) ...
 		(
 			key: \kn,

@@ -2,7 +2,14 @@
 // factory: channel 8
 
 /**** to do:
-check  overlap of midiNum with device/down, mute/left,
+
+// micro example:
+m = MKtl('myXL', "novation-launchcontrol-xl");
+g = MKtl('myXL').gui;
+MKtl('myXL').trace;
+MKtl('myXL').elAt(\pg0, \sl).action = { "YO, sl!".postln };
+
+
 ****/
 
 (
@@ -12,7 +19,7 @@ deviceType: \mixer,
 elementTypes: [\fader, \button, \knob],
 status: (
 	linux: "unknown",
-	osx: "unknown",
+	osx: "tested and working, 15.3.2016 by LFSaw.de",
 	win: "unknown"),
 
 idInfo: "Launch Control XL",
@@ -34,136 +41,148 @@ deviceInfo: (
 		"8 “user”-pages + 8 “factory”-pages",
 	],
 	// notes: "",
-	// hasScribble: false
+	longName: "novation launchcontrol XL"
 ),
 elementsDesc: (
 
-	elements: [
+	elements: 16.collect { |chan|
 		(
-			key: 'knSndA',
-			shared: ('midiMsgType': 'cc', 'type': 'knob',
-				'spec': 'midiCC', \ioType: \inout),
-			elements: 16.collect { |chan|
+			key: ("pg" ++ chan).asSymbol,
+			shared: ('midiChan': chan, \page: chan),
+			elements: [
 				(
-					elements: (13..20).collect { |num|
-						('midiChan': chan, 'midiNum':  num, \page: chan)
-				})
-		}),
-		(
-			key: 'knSndB',
-			shared: ('midiMsgType': 'cc', 'type': 'knob',
-				'spec': 'midiCC', \ioType: \inout),
-			elements: 16.collect { |chan|
+					key: \kn,
+					shared: ('midiMsgType': 'cc', 'elementType': 'knob',
+						'spec': 'midiCC', \ioType: \inout),
+					elements: [
+						(
+							key: 'sndA',
+							elements: (13..20).collect { |num| ('midiNum':  num) }
+						),
+						(
+							key: 'sndB',
+							elements: (29..36).collect { |num| ('midiNum':  num) }
+						),
+						(
+							key: 'pan',
+							elements: (49..56).collect { |num| ('midiNum':  num) }
+						)
+					]
+				),
 				(
-					elements: (29..36).collect { |num|
-						('midiChan': chan, 'midiNum':  num, \page: chan)
-				})
-		}),
-		(
-			key: 'knPan',
-			shared: ('midiMsgType': 'cc', 'type': 'knob',
-				'spec': 'midiCC', \ioType: \inout),
-			elements: 16.collect { |chan|
+					key: 'sl',
+					shared: (elementType: \slider, midiMsgType: \cc,
+						spec: \midiCC, \style: ( height: 4 )),
+					elements: (77..84).collect { |num, i|
+						('midiNum':  num, \style: ( column: i, height: 4 ))
+					}
+				),
 				(
-					elements: (49..56).collect { |num|
-						('midiChan': chan, 'midiNum':  num, \page: chan)
-				})
-		}),
-		(
-			key: 'sl',
-			shared: ('midiMsgType': 'cc', 'type': 'slider',
-				'spec': 'midiCC', \ioType: \inout),
-			elements: 16.collect { |chan|
-				(
-					elements: (49..56).collect { |num|
-						('midiChan': chan, 'midiNum':  num,
-							\page: chan, \style: ( height: 4 ))
-				})
-		}),
-		(
-			key: 'btFcs',
-			shared: ('midiMsgType': 'cc', 'type': 'button',
-				'spec': 'midiBut', \ioType: \inout),
-			elements: 16.collect { |chan|
-				(
-					elements: ((41..44) ++ (57..60)).collect { |num|
-						('midiChan': chan, 'midiNum':  num,
-							\page: chan)
-				})
-		}),
-		(
-			key: 'btCtl',
-			shared: ('midiMsgType': 'cc', 'type': 'button',
-				'spec': 'midiBut', \ioType: \inout),
-			elements: 16.collect { |chan|
-				(
-					elements: ((73..76) ++ (89..92)).collect { |num|
-						('midiChan': chan, 'midiNum':  num,
-							\page: chan)
-				})
-		}),
+					key: \bt,
+					shared: ('elementType': 'button', 'spec': 'midiNote', \ioType: \inout),
+					elements: [
+						(
+							key: 'fcs',
+							shared: ('elementType': 'button', 'spec': 'midiNote', \ioType: \inout),
+							elements: ((41..44) ++ (57..60)).collect{|num, i|
+								MKtlDesc.notePair((i+1).asSymbol, num,
+									shared:(
+										style: (
+											row: 7,
+											column: i
+										)
+								))
+							}
 
-		// single buttons 16 pages
-		(
-			key: 'device',
-			shared: ('midiMsgType': 'noteOnOff', 'type': 'button',
-				'midiNum':  105,'spec': 'midiNote', \ioType: \inout,
-				\style: (row: 3, column: 8.5, showLabel: true)),
-			elements: 16.collect { |chan| ('midiChan': chan, \page: chan) }
-		),
-		(
-			key: 'mute',
-			shared: ('midiMsgType': 'noteOnOff', 'type': 'button',
-				'midiNum':  106,'spec': 'midiNote', \ioType: \inout,
-				\style: (row: 4, column: 8.5, showLabel: true)),
-			elements: 16.collect { |chan| ('midiChan': chan, \page: chan) }
-		),
-		(
-			key: 'solo',
-			shared: ('midiMsgType': 'noteOnOff', 'type': 'button',
-				'midiNum':  107,'spec': 'midiNote', \ioType: \inout,
-				\style: (row: 5, column: 8.5, showLabel: true)),
-			elements: 16.collect { |chan| ('midiChan': chan, \page: chan) }
-		),
-		(
-			key: 'arm',
-			shared: ('midiMsgType': 'noteOnOff', 'type': 'button',
-				'midiNum':  108,'spec': 'midiNote', \ioType: \inout,
-				\style: (row: 6, column: 8.5, showLabel: true)),
-			elements: 16.collect { |chan| ('midiChan': chan, \page: chan) }
-		),
+						),
+						(
+							key: 'ctl',
+							shared: ('elementType': 'button', 'spec': 'midiNote', \ioType: \inout),
+							elements:  ((73..76) ++ (89..92)).collect { |num, i|
+								MKtlDesc.notePair((i+1).asSymbol, num,
+									shared:(
+										style: (
+											row: 8,
+											column: i
+										)
+									)
+								)
+							}
+
+						)
+					]
+				),
+
+				(
+					key: \slct,
+					shared: ('elementType': 'button', 'spec': 'midiNote', \ioType: \inout),
+					elements: [
+						[ \device, 105, 3, 8.5 ],
+						[ \mute,   106, 4, 8.5 ],
+						[ \solo,   107, 5, 8.5 ],
+						[ \arm,    108, 6, 8.5 ]
+					].collect{|list|
+						var key, num, row, col;
+						#key, num, row, col = list;
+
+						MKtlDesc.notePair(key, num,
+							shared: (style: (row: row, column: col, \showLabel: true))
+						)
+					}
+				),
+
+				(
+					key: \nav,
+					shared: ('elementType': 'button', 'spec': 'midiCC', midiMsgType: \cc, \ioType: \inout),
+					elements: [
+						[ \up,     104, 1, 8 ],
+						[ \down,   105, 1, 9 ],
+						[ \left,   106, 2, 8 ],
+						[ \right,  107, 2, 9 ],
+					].collect{|list|
+						var key, num, row, col;
+						#key, num, row, col = list;
+
+						(
+							'key': key,
+							'midiNum': num,
+							'style':  (row: row, column: col, \showLabel: true)
+						)
+
+					}
+
+				)
 
 
-		(
-			key: 'up',
-			shared: ('midiMsgType': 'noteOnOff', 'type': 'button',
-				'midiNum':  104,'spec': 'midiNote', \ioType: \inout,
-				\style: (row: 1, column: 8, showLabel: true)),
-			elements: 16.collect { |chan| ('midiChan': chan, \page: chan) }
-		),
-		(
-			key: 'down',
-			shared: ('midiMsgType': 'noteOnOff', 'type': 'button',
-				'midiNum':  105,'spec': 'midiNote', \ioType: \inout,
-				\style: (row: 1, column: 9, showLabel: true)),
-			elements: 16.collect { |chan| ('midiChan': chan, \page: chan) }
-		),
-
-		(
-			key: 'left',
-			shared: ('midiMsgType': 'noteOnOff', 'type': 'button',
-				'midiNum':  106,'spec': 'midiNote', \ioType: \inout,
-				\style: (row: 2, column: 8, showLabel: true)),
-			elements: 16.collect { |chan| ('midiChan': chan, \page: chan) }
-		),
-		(
-			key: 'right',
-			shared: ('midiMsgType': 'noteOnOff', 'type': 'button',
-				'midiNum':  107,'spec': 'midiNote', \ioType: \inout,
-				\style: (row: 2, column: 9, showLabel: true)),
-			elements: 16.collect { |chan| ('midiChan': chan, \page: chan) }
-		),
-	]
+				//
+				// 	[	// key, midinum, row, col
+				// 		[ \up,     104, 1, 8 ],
+				// 		[ \down,   105, 1, 9 ],
+				// 		[ \left,   106, 2, 8 ],
+				// 		[ \right,  107, 2, 9 ],
+				//
+				// 		[ \device, 105, 3, 8.5 ],
+				// 		[ \mute,   106, 4, 8.5 ],
+				// 		[ \solo,   107, 5, 8.5 ],
+				// 		[ \arm,    108, 6, 8.5 ]
+				//
+				// 	].collect { |list|
+				// 		var onOffGroup, style;
+				// 		var key, num, row, col;
+				//
+				// 		#key, num, row, col = list;
+				// 		style = (row: row, column: col, \showLabel: true);
+				//
+				// 		onOffGroup = MKtlDesc.notePair(key, num).postcs;
+				// 		// onOffGroup.elements[0].put(\style, style);
+				// 		// onOffGroup.elements[0].put(\style,
+				// 		// 	style.copy.put(\row, style.row + 0.8)
+				// 		// );
+				// 		onOffGroup
+				// 	}
+				// )
+			]
+		)
+	}
 )
 );
-

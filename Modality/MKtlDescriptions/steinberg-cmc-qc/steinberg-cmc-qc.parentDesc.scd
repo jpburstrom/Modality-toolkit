@@ -1,7 +1,3 @@
-/*
-device I used to test earlier is currently not sending any midi.
-get back to this later.
-*/
 
 (
 deviceName: "Steinberg CMC-QC",
@@ -11,7 +7,7 @@ elementTypes: [\encoder, \button],
 numPorts: 3,
 
 deviceInfo: (
-	// vendorURI: "http://www.steinberg.net/en/products/controllers/cmc_series/models/cmc_qc.html",
+	vendorURI: "http://www.steinberg.net/en/products/controllers/cmc_series/models/cmc_qc.html",
 	// manualURI: "",
 	// description: "",
 	// features: [],

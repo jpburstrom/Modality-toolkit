@@ -1,6 +1,6 @@
 /*
 Questions:
-* update only when files newer than cache were added
+* update cache only when files newer than cache were added
 - it is really fast anyway, so just do on every startup? -
 */
 
@@ -19,6 +19,7 @@ MKtlDesc {
 	classvar <docURI = "http://modalityteam.github.io/controllers/";
 
 	classvar <>isElemFunc;
+	classvar <>platformSpecific = true;
 
 	var <name, <fullDesc, <path;
 	var <elementsDict;
@@ -91,7 +92,13 @@ MKtlDesc {
 		foundPaths = foldersToLoad.collect { |dir|
 			(dir +/+ filename ++ fileExt).pathMatch
 			// add depth of one folders
-			++ (dir +/+ "*/" +/+ filename ++ fileExt).pathMatch
+			// worked like this for osx and linux:
+			// ++ (dir +/+ "*" +/+ filename ++ fileExt).pathMatch
+			// quick fix for windows, where pathMatch does not allow
+			// wildcards for dirs, like "path/*/*.desc.scd"
+			++ (dir +/+ "*").pathMatch.collect { |folder|
+				(folder +/+ filename ++ fileExt).pathMatch
+			}.flatten(1)
 		}.flatten(1);
 
 		if (postFound) {
@@ -139,10 +146,28 @@ MKtlDesc {
 	}
 
 	// info
-	*postStatus {
-		MKtlDesc.loadDescs
-		.sort { |a, b| a.fullDesc.status < b.fullDesc.status; }
-		.do { |a| [a.fullDesc.status, a.name].postcs; };
+	*postStatus { |showWorking = false|
+		var maxNameLen = 0, numOK = 0;
+		var descs = MKtlDesc.loadDescs;
+		var test = { |desc| desc.fullDesc.status.beginsWith("tested and working") };
+		descs.do { |desc|
+			maxNameLen = max(maxNameLen, desc.name.cs.size);
+			if (test.value(desc)) {
+				numOK = numOK + 1
+			};
+		};
+
+		"\n% - descs: % tested and working : %.\n\n"
+		.postf(thisMethod, descs.size, numOK);
+
+		if (showWorking) { "All descs:\n" } { "Not fully working yet:\n" }.postln;
+
+		descs.sort { |a, b| a.fullDesc.status < b.fullDesc.status; };
+		descs.do { |desc|
+			if (showWorking or: { test.value(desc).not })  {
+				(desc.name.cs.padRight(maxNameLen) + desc.fullDesc.status).postln
+			};
+		};
 	}
 
 
@@ -151,11 +176,99 @@ MKtlDesc {
 
 	*idInfoForFilename { |filename| ^fileToIDDict.at(filename) }
 
-	*filenamesForIDInfo { |idInfo|
-		^fileToIDDict.select { |info, filename|
-			// may need better matching
-			info == idInfo
-		}.keys(Array).sort
+	*filenamesForIDInfo { |idInfoFromDev|
+		^fileToIDDict.select { |idInfoInFile, filename|
+			// "matchInfo: %, %\n".postf(idInfoFromDev, idInfoInFile);
+			this.matchInfo(idInfoFromDev, idInfoInFile)
+		}.keys(Array).sort;
+	}
+
+	*matchInfo { |infoFromDev, infoInFile|
+		if (infoFromDev == infoInFile) { ^true };
+
+		if (infoFromDev.isKindOf(Dictionary).not) { infoFromDev = (deviceName: infoFromDev) };
+		if (infoInFile.isKindOf(Dictionary).not) { infoInFile = (deviceName: infoInFile) };
+
+		^(infoFromDev.deviceName == infoInFile.deviceName)
+		and: { infoFromDev.srcPortIndex == infoInFile.srcPortIndex }
+		// destPortIndex matches if srcPortIndex does
+	}
+
+	// compare a generic desc with a HID as found,
+	// and return non-matching elements for each side:
+	matchWithHID { |hid|
+		var hidElems = hid.elements;
+		var onlyInDesc = elementsDict.copy;
+		var onlyInHid = hidElems.copy;
+		elementsDict.keysValuesDo { |desckey, descelem|
+			onlyInHid.keysValuesDo { |hidkey, hidelem|
+				if ((descelem.hidUsage == hidelem.usage)
+					and: (descelem.hidUsagePage == hidelem.usagePage)) {
+					onlyInDesc.removeAt(desckey);
+					onlyInHid.removeAt(hidkey);
+				}
+			}
+		};
+		^(onlyInDesc: onlyInDesc, onlyInHid: onlyInHid);
+	}
+
+	*findGenericForHID { |hid, rateForMatch = 0.5|
+		var numHidElems = hid.elements.size;
+		var candList = [], candidate;
+		MKtlDesc.loadDescs("*generic*").do { |desc|
+			var onlyDict = desc.matchWithHID(hid);
+			var hidOnlySize = onlyDict[\onlyInHid].size;
+			var descOnlySize = onlyDict[\onlyInDesc].size;
+
+			// jump out if perfect match
+			if (hidOnlySize + descOnlySize == 0) {
+				"MKtlDesc: found exact generic desc matching %.\n"
+				.postf(hid.info);
+				^desc
+			};
+
+			// some degree of mismatch
+			if ( hidOnlySize < (numHidElems * rateForMatch)) {
+				onlyDict.put(\desc, desc);
+				candList.add(onlyDict);
+			}
+		};
+
+		candList;
+
+		if (candList.isEmpty) { ^nil };
+
+		if (candList.size > 1) {
+			// more than one - sort candidates by fullest match of onlyInHid
+			candList.sort { |a, b| a.onlyInHid.size < b.onlyInHid.size };
+			"%: found multiple candidate descs: \n".postf(hid.info);
+			candList.do (_.postcs);
+			"-> taking best matching first desc.".postln;
+		};
+
+		candidate = candList[0];
+
+		"\nMKtlDesc: found partially matching desc: %.\n".postf(hid.info);
+		if (candidate.onlyInHid.size > 0) {
+			"Some HID elements are not in the desc and cannot be used:".postln;
+			candidate[\onlyInHid].sortedKeysValuesDo { |key, val|
+				(key -> val).postln;
+			};
+			"Please adapt % as new desc file and add entries for these.\n"
+			.postf(candidate.desc)
+		};
+
+		if ( candidate.onlyInDesc.size > 0) {
+			"Some desc elements are not in the HID and cannot be used:".postln;
+			candidate[\onlyInDesc].sortedKeysValuesDo { |key, val|
+				(key -> val).postln;
+			};
+			"Please adapt % as new desc file and remove the entries for these.\n"
+			.postf(candidate.desc)
+		};
+		"".postln;
+
+		^candidate.desc
 	}
 
 	*writeCache {
@@ -166,7 +279,6 @@ MKtlDesc {
 			var path = folder +/+ cacheName;
 
 			descs.collect { |desc|
-
 				var filename = desc.fullDesc.filename;
 				var idInfo = desc.fullDesc.idInfo;
 				dictForFolder.put(filename, idInfo);
@@ -179,7 +291,7 @@ MKtlDesc {
 				};
 				file.write("]\n");
 				file.close;
-				"MKtlDesc cache written at %.\n".postf(path);
+				"MKtlDesc cache written with % entries at %.\n".postf(dictForFolder.size, path);
 			} {
 				warn("MKtlDesc: could not write cache at %.\n".format(path));
 			}
@@ -205,6 +317,45 @@ MKtlDesc {
 		// check if any files have changed,
 		// and if so, make a new cache file.
 	}
+
+	*defaultTestCode { |descfilename = "descNameHere"|
+		var file = File(defaultFolder +/+ "_descFile_testCode.scd", "r");
+		var testCode = file.readAllString;
+		testCode = testCode.replace("descNameHere", descfilename);
+		file.close;
+		^testCode
+	}
+
+	testCode {|includeDefault = true|
+		var descfilename = fullDesc.filename;
+		var testCode = fullDesc[\testCode];
+		var globalTestCode;
+
+
+		if (testCode.notNil) {
+			testCode = testCode.cs.drop(1).drop(-1);
+		} {
+			testCode = "// no specific testcode for %.".format(descfilename);
+		};
+
+		if (includeDefault) {
+			testCode = this.class.defaultTestCode(descfilename)
+			++ "\n"
+			++ "/*********** %: specific tests ***************/".format(descfilename)
+			++ testCode;
+		};
+
+
+
+		^testCode;
+	}
+
+	openTestCode {|includeDefault = true|
+		var descfilename = fullDesc.filename;
+
+		^Document("testCode_" ++ descfilename, this.testCode(includeDefault));
+	}
+
 
 
 	// ANALYSIS of loaded descs:
@@ -277,7 +428,7 @@ MKtlDesc {
 		}});
 		if (ok) { ^true };
 		// todo: more detailed info here
-	//	"% - dict not valid: %\n\n".postf(thisMethod, dict.deviceName);
+		//	"% - dict not valid: %\n\n".postf(thisMethod, dict.deviceName);
 		^false
 	}
 
@@ -289,7 +440,7 @@ MKtlDesc {
 			}
 		};
 		if (ok) { ^true };
-	//	"% - elemDesc not valid: %\n\n".postf(thisMethod, dict);
+		//	"% - elemDesc not valid: %\n\n".postf(thisMethod, dict);
 	}
 
 	// to be defined and tested
@@ -310,21 +461,21 @@ MKtlDesc {
 	*sharePropsToElements { |dict, toShare|
 		var shared, elements, subProps;
 		if (dict.isKindOf(Dictionary).not) {
-		//	"cant share in %\n".postf(dict);
+			//	"cant share in %\n".postf(dict);
 			^this
 		};
 
 		shared = dict[\shared] ? ();
 		elements = dict[\elements];
 		if (toShare.notNil) {
-		//	"shared: % parent: %\n\n".postf(shared, toShare);
+			//	"shared: % parent: %\n\n".postf(shared, toShare);
 			shared.parent = toShare;
 		};
 		elements.do { |elemDict|
 			if (elemDict[\elements].notNil) {
 				this.sharePropsToElements(elemDict, shared);
 			} {
-			//	"elem: % shared: %\n\n".postf(elemDict, shared);
+				//	"elem: % shared: %\n\n".postf(elemDict, shared);
 				elemDict.parent = shared
 			};
 		};
@@ -342,9 +493,11 @@ MKtlDesc {
 		};
 		if (multi.not) {
 			if (paths.size > 1) {
-				warn("MktlDesc: found multiple files!\n"
-					"loading only first of %: %.\n"
-					.format(paths.size, paths[0].basename));
+				warn("MktlDesc: found multiple matching files!");
+					paths.do { |path|
+						"\t".post; path.basename.postcs;
+					};
+					warn("loading first of %\n:\t%.\n".format(paths.size, paths[0].basename.cs));
 				^this.fromPath(paths[0]);
 			};
 		};
@@ -372,11 +525,6 @@ MKtlDesc {
 	}
 
 	*fromDict { |dict|
-		if (this.isValidDescDict(dict).not) {
-			warn("MKtlDesc - dict is not a valid description: %"
-				.format(dict));
-			^nil
-		};
 		^super.new.fullDesc_(dict);
 	}
 
@@ -426,7 +574,9 @@ MKtlDesc {
 			};
 		};
 
-		this.resolveDescEntriesForPlatform;
+		if (this.class.platformSpecific){
+			this.resolveDescEntriesForPlatform;
+		}
 	}
 
 	dictAt { |key| ^elementsDict[key] }
@@ -557,16 +707,20 @@ MKtlDesc {
 		if (postElements) { this.postElements };
 	}
 
-	// FIXME
 	postElements {
-		this.elementsDesc.traverseDo({ |el, deepKeys|
-			deepKeys.size.do { $\t.post };
-			el.name.post; deepKeys.postcs;
-		}, (_.isKindOf(Dictionary)),
-		{ |node, deepKeys|
-			deepKeys.size.do { $\t.post };
-			node.postln
-		});
+		var postOne = { |elemOrGroup, index, depth = 0|
+			depth.do { $\t.post; };
+			index.post; $\t.post;
+			if (elemOrGroup[\elements].notNil) {
+				"Group: ".post; elemOrGroup.key.postcs;
+				elemOrGroup[\elements].do({ |item, i|
+					postOne.value(item, i, depth + 1)
+				});
+			} {
+				elemOrGroup.key.postcs;
+			};
+		};
+		postOne.value(this.elementsDesc, "-");
 	}
 
 	writeFile { |path|
@@ -576,6 +730,63 @@ MKtlDesc {
 	storeArgs { ^[name] }
 	printOn { |stream|
 		stream << this.class.name << ".at(%)".format(name.cs);
+	}
+
+	*notePairs { |pairs|
+		^pairs.collect  (this.notePair(*_))
+	}
+
+	*notePair { |key, midiNum, shared|
+
+		// make the notePair first:
+		var style, notePair;
+		var halfHeight;
+
+		shared = shared ?? {()};
+		shared.put(\midiNum, midiNum);
+		style = shared[\style] ?? {()};
+		shared.put(\style, style);
+
+		// notePair be returned, no gui info
+		notePair = (
+			key: key,
+			shared: shared,
+			elements: [
+				( key: \on, midiMsgType: \noteOn ),
+				( key: \off, midiMsgType: \noteOff )
+			]
+		);
+
+		// GUI creation:
+		// the future solution is that style.guiType == \notePair
+		// tells .gui when to create a single gui for an onOff pair;
+		// shape of the gui will be determined by elementType.
+		// style info on row, column etc is passed thru here to shared.
+		style.put(\guiType, \notePair);
+
+
+		// quick hack for now:
+		// assume an elementType \pad,
+		// and split pad area of 1x1 into
+		// an upper half for noteOn,
+		// and a lower half pad for noteOff.
+
+		halfHeight = style.height ? 1 * 0.6;
+
+		// upper half for noteOn:
+		notePair.elements[0].put(
+			\style, style.copy.put(\height, halfHeight)
+		);
+
+		// lower half pad for noteOff:
+		notePair.elements[1].put(
+			\style, style.copy.put(\height, halfHeight)
+				// push down only if row is given,
+				// else leave row nil for crude auto-positioning
+			.put(\row, style.row !? { style.row + 0.45 })
+		);
+
+		^notePair
 	}
 
 	getMidiMsgTypes {
@@ -623,7 +834,7 @@ MKtlDesc {
 	// (meaning: (osx: 23, linux: 42, win: 4711));
 	// these are resolved for the platform used,
 	// e.g. for linux: (meaning: 42)
-	*resolveForPlatform { |dict|
+	*resolveForPlatform { |dict, recursive=false|
 		var platForms = [\osx, \linux, \win];
 		var myPlatform = thisProcess.platform.name;
 
@@ -634,6 +845,7 @@ MKtlDesc {
 			if (entry.isKindOf(Dictionary) and:
 				{ entry.keys.sect(platForms).notEmpty }) {
 				foundval = entry[myPlatform];
+				if (recursive) { this.resolveForPlatform(entry, recursive); };
 				// "MKtlDesc:resolveForPlatform - replacing: ".post;
 				^key -> foundval;
 		} };
@@ -646,6 +858,7 @@ MKtlDesc {
 				};
 				if (foundPlatformDep) {
 					foundval = entry[myPlatform];
+					if (recursive) { this.resolveForPlatform(entry, recursive); };
 					// "MKtlDesc:resolveForPlatform - replacing: ".post;
 					dict.put(dictkey, foundval);
 				};
@@ -658,10 +871,13 @@ MKtlDesc {
 
 	resolveDescEntriesForPlatform {
 		if (fullDesc.isNil) { ^this };
-		this.class.resolveForPlatform(fullDesc);
-		this.elementsDesc.keysValuesDo { |key, elemDesc|
-			MKtlDesc.resolveForPlatform(elemDesc);
+		if (fullDesc[\parentDesc].notNil) {
+			MKtlDesc.resolveForPlatform(fullDesc[\parentDesc], true);
 		};
-		this.class.resolveForPlatform(this.elementsDesc);
+		MKtlDesc.resolveForPlatform(fullDesc, true);
+		// MKtlDesc.resolveForPlatform(this.elementsDesc);
+		// this.elementsDesc.keysValuesDo { |key, elemDesc|
+		// 	MKtlDesc.resolveForPlatform(elemDesc, true);
+		// };
 	}
 }

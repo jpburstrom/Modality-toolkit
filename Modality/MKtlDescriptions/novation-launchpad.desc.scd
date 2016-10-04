@@ -9,7 +9,7 @@ deviceType: \launchpad,
 elementTypes: [\button],
 status: (
 	linux: "unknown",
-	osx: "unknown",
+	osx: "tested desc, looks good. needs gui layout. 2016_03_23, adc",
 	win: "unknown"),
 
 idInfo: "Launchpad",
@@ -26,14 +26,14 @@ deviceInfo: (
 	],
 	// notes: "",
 
-	hasScribble: true
+	longName: "novation launchpad"
 ),
 elementsDesc: (
 	shared: (\midiChan: 0),
 	elements: [
 		(
 			key: \bt,
-			shared: (\midiMsgType: \cc, \type: \button,
+			shared: (\midiMsgType: \cc, \elementType: \button,
 				\spec: \midiBut, \mode: \push),
 			elements: [
 				(key: \up,     \midiNum: 104),
@@ -48,14 +48,19 @@ elementsDesc: (
 		),
 		(
 			key: \pad,
-			shared: (\midiMsgType: \noteOnOff, \type: \pad, \spec: \midiVel),
+			shared: (\elementType: \pad, \spec: \midiVel),
 			elements: ((0, 16 .. 112) +.t (0..7)).flat.collect {|num, i|
-				(\midiNum: num)
+				(
+					elements: [
+						(key: \on, \midiMsgType: \noteOn, \midiNum: num),
+						(key: \off, \midiMsgType: \noteOff, \midiNum: num)
+					]
+				)
 			}
 		),
 		(
 			key: \arr,
-			shared: (\midiMsgType: \noteOn, \type: \pad, \spec: \midiVel),
+			shared: (\midiMsgType: \noteOn, \elementType: \pad, \spec: \midiVel),
 			elements: ((0, 16 .. 112) + 8).flat.collect {|num, i|
 				(\midiNum: num)
 			}

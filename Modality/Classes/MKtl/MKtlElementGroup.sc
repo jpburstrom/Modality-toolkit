@@ -76,17 +76,19 @@ MKtlElementGroup : MKtlElement {
 		} { elements.isKindOf( Array ) } {
 			elements = elements.collect({ |item, i|
 				var key;
-				if( item.isKindOf( Association ) ) {
+				case { item.isKindOf( Association ) } {
 					dict.put( item.key, item.value );
 					item.value;
-				} {
-					if (item.isKindOf(Dictionary)) {
-						// a dict with an entry for key:
-						key = item[\key];
-						key = (item.key ?? { (i+1).asSymbol });
-						//	dict.put( key, item );
-					};
+				}
+				{ item.isKindOf(Dictionary) } {
+					// a dict with an entry for key:
+					key = item[\key];
+					key = (item.key ?? { (i+1).asSymbol });
+					dict.put( key, item );
 					item;
+				} { item.isKindOf(MKtlElement) } {
+					dict.put(item.name, item);
+					item
 				};
 			});
 		};
@@ -184,7 +186,14 @@ MKtlElementGroup : MKtlElement {
 		 ^this.elements.remove( element );
 	}
 
-	indexOf { |item| ^dict.findKeyForValue( item ) ?? { this.elements.indexOf( item ); } }
+	indexOf { |item|
+		"// using %\n".postf(thisMethod);
+		^this.elemIndexOf(item);
+	}
+
+	elemIndexOf { |item| ^this.elements.indexOf( item ) }
+	elemKeyOf { |item| ^dict.findKeyForValue( item ) }
+
 
 	do { |function| elements.do( function ); }
 
@@ -225,6 +234,18 @@ MKtlElementGroup : MKtlElement {
 	deviceValue_ { |newvals|
 		var pairs = [elements, newvals].flop;
 		pairs.do { |assoc| assoc[0].deviceValue = assoc[1] }
+	}
+
+	prevValue { ^elements.collect(_.prevValue) }
+	prevDeviceValue { ^elements.collect(_.prevDeviceValue) }
+
+	// special method for a group of separate elements [\on, \off]
+	// if onElement was changed last, assume this group is on
+	isOn {
+		var onEl, offEl, onTime, offTime;
+		onEl = this.dict[\on]; onEl ?? { ^false };
+		offEl = this.dict[\off]; onEl ?? { ^false };
+		^onEl.lastUpdateTime > offEl.lastUpdateTime
 	}
 
 	prettyValues {
@@ -278,7 +299,8 @@ MKtlElementGroup : MKtlElement {
 
 	shape { ^elements.shape }
 
-	flop { ^elements.flopTogether } /// a bit dirty but it works
+	// this can break nested elementGroups
+//	flop { ^elements.flopTogether } /// a bit dirty but it works
 
 	attachChildren {
 		elements.do(_.prAddGroup(this));
@@ -327,7 +349,7 @@ MKtlElementGroup : MKtlElement {
 		this.action = action.removeFunc(argAction);
 	}
 
-	reset {
+	resetAction {
 		this.action = nil
 	}
 
@@ -341,13 +363,13 @@ MKtlElementGroup : MKtlElement {
 
 	// tagging support
 	addTag {|... newTags|
-		this.collect{|elem|
+		this.do {|elem|
 			elem.addTag(*newTags);
 		}
 	}
 
 	removeTag {|... newTags|
-		this.collect{|elem|
+		this.do {|elem|
 			elem.removeTag(*newTags);
 		}
 	}
@@ -359,7 +381,7 @@ MKtlElementGroup : MKtlElement {
 	}
 
 	elementsForTag {|... tag|
-		^this.flat.select{|el|
+		^this.flat.select {|el|
 			el.tags.includes(*tag)
 		};
 	}

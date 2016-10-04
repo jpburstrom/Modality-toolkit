@@ -19,7 +19,9 @@
 OSCFunc.trace(true);
 OSCFunc.trace(false);
 // * if nothing, check that touchosc sends to proper port:
-NetAddr.langPort
+NetAddr.langPort;
+
+OSCdef('/1/fader5', { |msg| msg.postln });
 
 ////// the protocol for scene 1 is
 // // a horiz. crossfader
@@ -33,18 +35,43 @@ NetAddr.langPort
 OSCMKtlDevice.verbose = false;
 // maybe clear MKtls first
 MKtl.all.do(_.free).clear;
-
 // make our tosc
 t = MKtl(\tosca, "touchosc-simple1");
 
-// update the touchOSC send address to the one you see in OSCFunc.trace:
-MKtl(\tosca).device.updateSrcAddr("192.168.178.53", 62523);
+// trace to look what address the touchOSC app sends from:
+OSCFunc.trace(true);
+// and turn off tracing.
+OSCFunc.trace(false);
+
+// set the address to the one you see in the trace:
+t.device.updateSrcAddr("192.168.178.68", 63763);
+
+NetAddr.langPort;
+
+// now trace the MKtl itself
+t.trace;
+t.device;
 // and give it an action for all its elements
-MKtl(\tosca).elements.action = { |el|
-"tOsc %: %\n".postf(el.name, el.value.round(0.001))
+t.elAt.action = { |el|
+	"tOsc %: %\n".postf(el.name, el.value.round(0.001))
 };
 
 t.gui;
+
+// or if you test by simulation from SC:
+n = NetAddr("192.168.178.51", 57120);
+MKtl(\tosca).device.updateSrcAddr("192.168.178.51", 57120);
+
+
+Tdef(\toscTest, {
+	inf.do {
+		n.sendMsg('/accxyz', 1.0.rand2, 1.0.rand2, 1.0.rand2);
+		if (0.1.coin) { n.sendMsg('/xfader'.postln, 1.0.rand); };
+		if (0.1.coin) { n.sendMsg("/1/fader4".postln, 1.0.rand); };
+		0.1.wait;
+	};
+}).play;
+
 *******************************/
 (
 (
@@ -53,14 +80,17 @@ protocol: \osc,
 deviceType: \phoneApp,
 elementTypes: [\accelerometer, \fader, \button],
 status: (
-	linux: "unknown",
-	osx: "tested and working",
-	win: "unknown"),
+	linux: "unknown after refactor",
+	osx: "tested and working. 2016-04-10, adc.",
+	win: "unknown after refactor"
+),
 
 idInfo: "touchOSC",
 netAddrInfo: (srcPort: 9000, recvPort: 57120, ipAddress: "192.168.178.51"),
 
-deviceInfo: (),
+deviceInfo: (
+	longName: "touchOSC"
+),
 
 // seem to be the max accel values on iphone
 specs: (accx: [-3.0, 3.0, \lin]),
@@ -76,7 +106,8 @@ elementsDesc: (
 	elements: [
 		(
 			key: \xfader,
-			oscPath: '/1/fader5', type: 'slider', spec: \unipolar, ioType: \in
+			oscPath: '/1/fader5', elementType: 'slider', spec: \unipolar, ioType: \in,
+			style: (width: 4, height: 1)
 		),
 		(
 			key: \sl,

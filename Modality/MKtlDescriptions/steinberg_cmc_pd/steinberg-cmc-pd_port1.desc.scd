@@ -1,4 +1,10 @@
 /*
+
+* TODO:
+* implement and test out to device and sysex.
+* make special mode or example for 4vel mode
+
+
 According to Manual,
 Port 1 is for pd->comp, comp->pd: pads do noteOn/off, noteNum, velocity.
 Port 2 is for pd>comp, buttons (shift, curveSetup, 4velmode, browse)
@@ -7,7 +13,7 @@ Port 3 is apparently unused (i.e. reserved for company-only uses).
 
 pads and 4velmode also send sysex on port 2;
 4velmode button toggles light, but sends noteOn/off on touch/release.
-(state liekly sent in sysex.
+- state is likely sent in sysex?
 
 --- velocity value is always 16!
 --- 4velmode is same note on buts 1,5,9,13 etc; vel 31, 63, 95, 127.
@@ -31,16 +37,22 @@ pads and 4velmode also send sysex on port 2;
 // 15: (100..115),
 // 16: all sysex messages // no idea what they are for
 
+m.free; m = MKtl(\pd, "*cmc-pd_port1");
+m.gui;
+m.postElements;
+
+m = MKtl('pd_ctls', "*cmc-pd_port2");
+
 */
 (
 parentDesc: "steinberg-cmc-pd",
 
 status: (
 	linux: "unknown",
-	osx: "tested and working, minus out and sysex",
+	osx: "tested and working. 2016-03-16, adc",
 	win: "unknown"),
 
-idInfo: (deviceName: "Steinberg CMC-PD", sourcePortIndex: 0, destPortIndex: 0),
+idInfo: (deviceName: "Steinberg CMC-PD", srcPortIndex: 0, destPortIndex: 0),
 
 // by default, all pads have vel of 16
 // in 4vel mode, they are 0, 31, 63, 95, 127,
@@ -54,21 +66,30 @@ deviceInfo: (
 	// features: "",
 	// notes: "",
 ),
+specs: (midiVel16: [0, 16, \lin, 16]),
+
 elementsDesc: (
-	shared: ('midiMsgType': 'noteOnOff', 'elementType': 'pad',
-		'midiChan': 0, 'spec': 'midiVel')
+	shared: ('elementType': 'pad', 'midiChan': 0, 'spec': 'midiVel16'),
 	elements: [
 		(key: 'pad',
+			// just a sketch,not working yet:
 			elements: [
-				\1: [35, 36, 38, 40,   39,44,42,46,   41,45,47,48,  51,55,49,56]
-					.collect { |num| ('midiNum': num) },
-				\2: (4..19)   .collect { |num| ('midiNum': num) },
-				\3: (20..35)  .collect { |num| ('midiNum': num) },
-				\4: (36..51)  .collect { |num| ('midiNum': num) },
-				\5: (52..67)  .collect { |num| ('midiNum': num) },
-				\6: (68..83)  .collect { |num| ('midiNum': num) },
-				\7: (84..99)  .collect { |num| ('midiNum': num) },
-				\8: (100..115).collect { |num| ('midiNum': num) }
+				(
+					key: \1,
+					elements: [35, 36, 38, 40,   39,44,42,46,   41,45,47,48,  51,55,49,56]
+					.collect { |num, i|
+						MKtlDesc.notePair(i, num,
+							(style: (row: 4 - (i div: 4), column: i % 4))
+						).put(\page, 0)
+					}
+				),
+				// \2: (4..19)   .collect { |num, i| MKtlDesc.notePair(i, num) },
+				// \3: (20..35)  .collect { |num, i| MKtlDesc.notePair(i, num) },
+				// \4: (36..51)  .collect { |num, i| MKtlDesc.notePair(i, num) },
+				// \5: (52..67)  .collect { |num, i| MKtlDesc.notePair(i, num) },
+				// \6: (68..83)  .collect { |num, i| MKtlDesc.notePair(i, num) },
+				// \7: (84..99)  .collect { |num, i| MKtlDesc.notePair(i, num) },
+				// \8: (100..115).collect { |num, i| MKtlDesc.notePair(i, num) }
 			]
 		)
 	]

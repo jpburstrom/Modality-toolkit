@@ -5,7 +5,7 @@ deviceType: \gamepad,
 elementTypes: [\button, \joyAxis, \hat],
 status: (
 	linux: "unknown",
-	osx: "unknown",
+	osx: "tested desc, looks good. 2016_03_23, adc",
 	win: "unknown"),
 
 idInfo: "Dual Analog Pad_Jess Tech",
@@ -15,7 +15,7 @@ deviceInfo: (
 	// manualURI: "",
 	// description: "",
 	// features: [],
-	// notes: "",
+	longName: "Jess Tech Dual Analog Pad"
 
 ),
 
@@ -37,7 +37,7 @@ elementsDesc: (
 			]
 		),
 		(
-			key: 'hat',
+			key: 'hat', elementType: \hatSwitch,
 			'hidUsage': 57, 'hidUsagePage': 1, 'type': 'hatSwitch',
 			'ioType': 'in', spec: \cent1, mode: \center
 		),

@@ -4,9 +4,10 @@ OSCMKtlDevice : MKtlDevice {
 	classvar inversePatternDispatcher;
 	classvar messageSizeDispatcher;
 
-	var <source;  // receiving OSC from this NetAddr
-	var <destination; // sending OSC to this NetAddr
-	var <recvPort; // port on which we need to listen
+	var <source;  // the NetAddr from which SC is receiving OSC from the source
+	var <destination; // the addr SC should send back to - usually the same as source
+	var <recvPort;  // the port to which the source is sending,
+					// which is the one thru which SC listens to the source
 
 	var <oscFuncDictionary;
 
@@ -43,16 +44,12 @@ OSCMKtlDevice : MKtlDevice {
 		*/
 	}
 
-	*initDevices { |force=false| // force has no real meaning here
-		var postables = MKtlLookup.allFor(\osc);
+	// osc devices are not registered in any way,
+	// so initDevices and force flag have no real meaning here
+	*initDevices { |force=false|
 		if (force or: initialized.not) {
 			initialized = true;
-			if (verbose and: { postables.size == 0 }) {
-				"\n\n// OSCMKtlDevice: No known sending addresses so far.\n"
-				"// To detect OSC devices by hand, use OSCMonitor: ".postln;
-				"o = OSCMonitor.new.enable.show;".postln;
-				^this
-			};
+			if (verbose) { this.postPossible };
 		};
 	}
 
@@ -62,15 +59,18 @@ OSCMKtlDevice : MKtlDevice {
 	*deinitDevices { } // doesn't do anything, but needs to be there
 
 	*postPossible {
-		var postables = MKtlLookup.allFor(\osc);
-		"\n// Available OSCMKtlDevices:".postln;
-		"// MKtl(name);  // [ host, port ]".postln;
-		postables.sortedKeysValuesDo { |key, addr|
-			"    MKtl('%'); // [ %, % ]\n"
-			.postf(key, addr.hostname.cs, addr.port.cs )
+		var oscmktls = MKtl.all.select(_.protocol == \osc);
+		"\n/* OSC devices not found automagically yet. Use OSCMon: */\n"
+		"o = OSCMon.new.enable.show;\n".postf(thisMethod);
+		if (oscmktls.size > 0) {
+			"// Existing MKtls for OSC devices:".postln;
+			oscmktls.sortedKeysValuesDo (_.postcs);
 		};
 	}
 
+	// anything meaningful to do with multiIndex here?
+	// as there is no real registration of sources in OSC,
+	// it seems there will never be multiple matches.
 	*new { |name, devInfo, parentMKtl, multiIndex|
 
 		devInfo = devInfo ?? { parentMKtl.desc; };
@@ -84,20 +84,21 @@ OSCMKtlDevice : MKtlDevice {
 
 	init { |desc|
 		desc = desc ?? { mktl.desc };
-		this.initOSCMKtl( desc.fullDesc[\netAddrInfo] ).initElements;
+		this.initAddresses(desc.fullDesc[\netAddrInfo]);
+		this.initOSC;
 	}
 
-	initOSCMKtl { |info|
-		var ipAddr =  info !? { info.at( \ipAddress ) } ? "127.0.0.1";
-		var srcPort = info !? { info.at( \srcPort ) };
-		var dstPort = info !? { info.at( \destPort ) } ? srcPort ? NetAddr.langPort;
+	// for clarity:
+	// recvPort is the port on which the source sends and SC receives.
+	// srcPort is the port the source LISTENS TO and SC sends on.
+	initAddresses { |info|
+		var srcIPaddr =  info !? { info.at( \ipAddress ) } ? "127.0.0.1";
+		var srcPort = info !? { info.at( \srcPort ) } ? NetAddr.langPort;
+		// usually the same as destination port
+		recvPort = info !? { info.at( \recvPort ) } ? srcPort ? NetAddr.langPort;
 
-		source = NetAddr.new( ipAddr, srcPort );
-		destination = NetAddr( ipAddr, dstPort);
-		recvPort = srcPort;
-
-		this.initCollectives;
-
+		source = NetAddr.new( srcIPaddr, srcPort );
+		destination = NetAddr.new( srcIPaddr, srcPort );
 		// must do by hand for OSC
 		this.addToLookup;
 	}
@@ -108,18 +109,23 @@ OSCMKtlDevice : MKtlDevice {
 		MKtlLookup.addOSC(source, mktl.desc.idInfo, destination, this.mktl);
 	}
 
+	initOSC {
+		oscFuncDictionary.do(_.free);
+		this.initCollectives;
+		this.initOSCDict;
+	}
+
+
 	// source is used in all OSCFuncs, so sticking in new ip/port
 	// values will redirect OSCfuncs to the new address data
 	updateSrcAddr { |hostname, port|
 		if (hostname.notNil) { source.hostname = hostname };
 		if (port.notNil) { source.port = port };
-		this.addToLookup;
+		this.initOSC;
 	}
-
-	updateDestAddr { |hostname, port|
-		if (hostname.notNil) { destination.hostname = hostname };
-		if (port.notNil) { destination.port = port };
-		this.addToLookup;
+	updateRecvPort { |port|
+		recvPort = port ? recvPort;
+		this.initOSC;
 	}
 
 	closeDevice {
@@ -140,7 +146,7 @@ OSCMKtlDevice : MKtlDevice {
 			el.value.round(0.001), el.type).postln;
 	}
 
-	initElements {
+	initOSCDict {
 
 		if ( oscFuncDictionary.isNil ){
 			oscFuncDictionary = IdentityDictionary.new;

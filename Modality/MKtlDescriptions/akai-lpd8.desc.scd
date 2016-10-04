@@ -1,76 +1,28 @@
 /* AKAI LPD8 Laptop Pad controller */
-// no support for pad cc mode because it use
-// the same cc numbers then as the knobs...
+// no support for pad cc mode because it uses
+// the same cc numbers then as the knobs, which makes no sense.
+// -> so just use pads as note on/offs.
 
-(
-deviceName: "LPD8",
-protocol: \midi,
-deviceType: \drumpad,
-elementTypes: [\pad, \knob],
-status: (
-	osx: "tested and working",
-	linux: "unkown",
-	win: "unknown"
-),
+/*
+// test this desc:
+~thisdesc = thisProcess.nowExecutingPath.basename.split($.).first.postcs;
+d = MKtlDesc.loadDescs(~thisdesc).first;
+d.web;
 
-idInfo: "LPD8",
+// close old m, open new one, make gui:
+m.free; m = MKtl(\lpd8, "*lpd8"); m.gui;
+m.trace;
+m.elementsDict.size;
+m.postElements;
+*/
 
-deviceInfo: (
-	vendorURI: "http://www.akaipro.com/product/lpd8",
-	manualURI: "http://www.akaipro.com/product/lpd8#downloads",
-	description: "a basic drumpad controller", // one line text
-	features: [
-		"8 velocity-sensitive pads",
-		"8 knobs",
-		"4 mode-switching buttons"
-	],
-	notes: "use only recommended hardware mode PAD.",
-),
-
-elementsDesc: (
-	key: \lpd8,
-	'shared': (key: \shared, \ioType: \inout, midiChan: 0),
-
-	elements: [
-		(
-			key: \kn,
-			shared: (\elementType: \knob, \midiMsgType: \cc,
-				\spec: \midiCC),
-			elements: (1..8).collect { |num|
-				(key: num.asSymbol, \midiNum: num)
-			}
-		),
-		// noteOnOff not working properly because noteOff vel is 127
-		// (
-		// 	key: \pad,
-		// 	shared: (\elementType: \pad, midiMsgType: \noteOnOff,
-		// 	\spec: \midiVel),
-		// 	elements: (36..43).collect { |num, i|
-		// 		(key: (i+1).asSymbol, midiNum: num)
-		// 	}
-		// )
-		(
-			key: \pad,
-			shared: (\elementType: \pad, \spec: \midiVel),
-			elements: (36..43).collect { |num, i|
-				(
-					shared: (key: (i+1).asSymbol, midiNum: num),
-					elements: [
-						(key: \on,  midiMsgType: \noteOn ),
-						(key: \off, midiMsgType: \noteOff)
-					]
-				)
-			}
-		)
-	]
-)
-);
 
 /*
 // A small example how to make this MKtl,
 // and how to play something with it.
 
 MKtl.find; // find all MDIDI devices and list them
+MKtl('lpd').clear;
 MKtl('lpd', "*lpd8"); // make an MKtl for LPD8.
 MKtl('lpd').trace;
 
@@ -80,7 +32,7 @@ MKtl('lpd').gui;
 // a synthdef
 (
 SynthDef(\test, {
-	var sound = (SinOsc.ar( \freq.kr(400) ) * \amp.kr(1) ).softclip;
+	var sound = (SinOsc.ar( \freq.kr(400) ) * 5 * \amp.kr(1) ).tanh;
 	var env = EnvGen.ar(Env.adsr,\gate.kr(1));
 	Out.ar(0, sound * env * 0.25)
 }).add
@@ -93,7 +45,7 @@ MKtl('lpd').elAt(\pad, \all, \on).do { |el, i|
 	el.action_({ |v|
 		~lpdSynths.at(i).release;
 		~lpdSynths[i] =
-			Synth(\test, [\amp, v.value*30, \freq, 400+(100*i)].postln)
+			Synth(\test, [\amp, v.value.squared, \freq, 400+(100*i)].postln)
 	})
 };
 
@@ -110,4 +62,65 @@ MKtl('lpd').elAt(\kn).do { |knob, i|
 
 MKtl('lpd').trace(false);
 
+MKtl('lpd').free;
 */
+
+
+(
+deviceName: "LPD8",
+protocol: \midi,
+deviceType: \drumpad,
+elementTypes: [\pad, \knob],
+status: (
+	osx: "tested and working, 2016_03_15, adc",
+	linux: "tested and working 2016_03_20, nescivi",
+	win: "unknown"
+),
+
+idInfo: "LPD8",
+
+deviceInfo: (
+	vendorURI: "http://www.akaipro.com/product/lpd8",
+	manualURI: "http://www.akaipro.com/product/lpd8#downloads",
+	description: "a basic drumpad controller", // one line text
+	features: [
+		"8 velocity-sensitive pads",
+		"8 knobs",
+		"4 mode-switching buttons" // these do not actually send any data, but change modes
+	],
+	notes: "use only recommended hardware mode PAD.",
+	longName: "AKAI LPD8"
+),
+
+elementsDesc: (
+	// key: \lpd8,
+	'shared': (key: \shared, \ioType: \inout, midiChan: 0),
+
+	elements: [
+		(
+			key: \kn,
+			shared: (\elementType: \knob, \midiMsgType: \cc,
+				\spec: \midiCC),
+			elements: (1..8).collect { |num, i|
+				(key: num.asSymbol, \midiNum: num,
+					style: (row: i div: 4, column: i % 4 + 4)
+				)
+			}
+		),
+		(
+			key: \pad,
+			shared: (\elementType: \pad, \spec: \midiVel),
+		 	elements: (36..43).collect { |num, i|
+				MKtlDesc.notePair(
+					(i+1).asSymbol, num,
+					shared: (style: (
+						row: 1 - (i div: 4), // lower row has pad 1-4
+						column: i % 4)
+					)
+				);
+			}
+		)
+	]
+)
+);
+

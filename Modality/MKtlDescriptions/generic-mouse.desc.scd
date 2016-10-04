@@ -5,20 +5,21 @@ deviceType: \mouse,
 elementTypes: [\mouseAxis, \button, \mouseWheel],
 status: (
 	linux: "unknown",
-	osx: "unknown",
+	osx: "tested and working. 2016-03-24, adc",
 	win: "unknown"),
 
 deviceName: "Generic Mouse",
 
 deviceInfo: (
-	// vendorURI: "",
+	vendorURI: "too many to list",
 	// manualURI: "",
-	description: "Interface to a generic mouse",
 	features: [
+		"2 mouse axes",
 		"3 buttons",
 		"scroll wheel",
 	],
-	// notes: "",
+	longName: "Generic Mouse",
+	notes: "",
 	// hasScribble: false
 ),
 elementsDesc: (

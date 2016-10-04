@@ -2,6 +2,7 @@
 needs initialisation messages for different configs,
 see github/modality #24
 */
+
 (
 deviceName: "The Ribbon",
 protocol: \midi,
@@ -22,8 +23,9 @@ deviceInfo: (
 		"pressure and postition sensitive ribbon",
 		"capacitive sensing touch field",
 	],
+	longName: "EOWave Ribbon (v.1)"
 	// notes: "",
-	// hasScribble: false
+
 ),
 
 elementsDesc: (
@@ -37,9 +39,10 @@ elementsDesc: (
 			elements: [
 				(
 					key: \touch,
-					shared: (elementType: \slider, midiMsgType: \noteOnOff,
-						spec: \midiBut),
-					elements: (36..82).collect {|num| (midiNum: num, spec: \midiBut) }
+					shared: (elementType: \slider, spec: \midiBut),
+					elements: (36..82).collect {|num, i|
+						MKtlDesc.notePair(i, num, (style: (row: 0, column: i)))
+					}
 				),
 				(
 					key: \bend,

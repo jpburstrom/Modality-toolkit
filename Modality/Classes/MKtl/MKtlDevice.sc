@@ -55,21 +55,33 @@ MKtlDevice {
 		};
 	}
 
-	*descFileStrFor { |nameKey, filenames, multiIndex|
+	*descFileStrFor { |nameKey, lookupKey, filenames, multiIndex, generic = ""|
+		var str, numDescs = filenames.size;
+		var lookupStr = "MKtl('%', %);\n".format(nameKey, lookupKey.cs);
 
-		var str = filenames.size.switch(
-			0, 	{ "\t\t// no matching desc files found!\n"; },
-			1, 	{ "\t\t// create from desc file:\n"; },
-			{ 	"\t\t// multiple desc files found!\n"
-				"\t\t//choose one for the MKtl:\n";
-		});
+		numDescs.switch(
+			0, 	{
+				str = "\t// Unknown - Create from lookupName and explore %:\n".format(generic) ++ lookupStr;
+			},
+			1, 	{
+				str = "\t// Supported. Create by lookupName only if necessary:\n// "
+				++ lookupStr
+				++ "\t// Best create MKtl from desc file:\n";
+
+			},
+			{ 	str = "\t// Supported by % desc files.\n".format(numDescs)
+				++ "// Create MKtl from lookupName only if necessary:\n// "
+				++ lookupStr
+				++ "\t// Best create MKtl from one of the desc files:\n";
+
+			}
+		);
 
 		filenames.do { |filename|
-		str = str ++ "MKtl(%, %);\n".format(
+		str = str ++ "MKtl(%, %%);\n".format(
 			nameKey.cs,
 			filename.cs,
-				if (multiIndex.notNil, "," + multiIndex, ""
-				)
+				if (multiIndex.notNil, ", multiIndex:" + multiIndex, "")
 			);
 		};
 		^str ++ "\n";
@@ -112,8 +124,8 @@ MKtlDevice {
 		desc = parentMKtl.desc;
 		if (desc.isNil) {
 			if (verbose) {
-				"MKtldevice.open: parentMktl.desc.isNil"
-				" - should not happen!".postln;
+				"MKtlDevice:open: cannot open - no matching device found and no desc given."
+				.postln;
 			};
 			^nil
 		};
@@ -126,9 +138,9 @@ MKtlDevice {
 		if (deviceCandidates.size == 0) {
 			if (protocol != \osc) {
 				if (verbose) {
-					inform("%: could not open device -"
-						" no device candidates found."
-						.format(thisMethod));
+					inform("%: can not open - no device candidates found."
+						.format(thisMethod)
+					);
 				};
 				^nil
 			};
@@ -141,11 +153,13 @@ MKtlDevice {
 					lookupName = lookupInfo.lookupName;
 				};
 			} {
-				inform("%: multiple device candidates found,"
+				inform("//---\n%: multiple device candidates found,"
 					" please disambiguate by providing a multiIndex!"
-					"\nThe candidates are:"
+					"\nThe candidates are:\n"
 				.format(thisMethod));
-				deviceCandidates.printcsAll;
+				deviceCandidates.do { |info, i|
+					"multiIndex %: %\n".format(i, info.cs).postln;
+				};
 				^nil
 			};
 		} {

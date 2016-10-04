@@ -7,7 +7,7 @@ deviceType: \drumpad,
 elementTypes: [\pad, \button, \slider],
 status: (
 	linux: "unknown",
-	osx: "unknown",
+	osx: "tested desc, looks good. needs gui layout. 2016_03_23, adc",
 	win: "unknown"),
 
 idInfo: "USB Trigger Finger",
@@ -18,8 +18,7 @@ deviceInfo: (
 	// description: "",
 	features: [\pad, \slider, \knob],
 	// notes: "",
-
-	// hasScribble: false
+	longName: "M-AUDIO Trigger Finger"
 ),
 elementsDesc: (
 	shared: (\midiChan: 0, ioType: \in),
