@@ -10,6 +10,7 @@ MKtlDesc {
 	classvar <descExt = ".desc.scd", <compExt = ".comp.scd";
 	classvar <parentExt = ".parentDesc.scd";
 	classvar <descFolders;
+	classvar <userFolder;
 
 	classvar <allDescs;
 	classvar <cacheName = "_allDescs.cache.scd";
@@ -21,13 +22,20 @@ MKtlDesc {
 	classvar <>isElemFunc;
 	classvar <>platformSpecific = true;
 
+	classvar <groupFuncs;
+
 	var <name, <fullDesc, <path;
 	var <elementsDict;
 
 	*initClass {
+		Class.initClassTree(Spec);
+
 		defaultFolder = MKtlDesc.filenameSymbol.asString.dirname.dirname.dirname
 		+/+ folderName;
-		descFolders = List[defaultFolder];
+		this.checkUserFolder;
+		this.initGroupFuncs;
+
+		descFolders = List[defaultFolder, userFolder];
 		allDescs =();
 		isElemFunc = { |el|
 			el.isKindOf(Dictionary) and: { el[\elements].isNil }
@@ -35,7 +43,139 @@ MKtlDesc {
 
 		fileToIDDict = Dictionary.new;
 
-		this.loadCache;
+		MKtlDesc.updateCaches;
+		this.loadCaches;
+	}
+
+	*checkUserFolder {
+		userFolder = Platform.userAppSupportDir +/+ folderName;
+		if (userFolder.pathMatch.isEmpty) {
+			File.mkdir(userFolder)
+		};
+	}
+
+	*initGroupFuncs {
+		groupFuncs = (
+			// // remain single elements, should not be needed at all
+			// // - maybe use only to switch MPadView to its proper mode.
+			noteOnTrig: { |dict|
+				dict.putAll((\midiMsgType: \noteOn, \spec: \midiBut));
+			},
+			noteOnVel: { |dict|
+				dict.putAll((\midiMsgType: \noteOn, \spec: \midiVel));
+			},
+			// default
+			noteOnOff: { |dict|
+				var shared = ().putAll(dict);
+				dict.clear.putAll((
+					shared: shared,
+					\shareGui: true,
+					\elements: [
+						(key: \on,  midiMsgType: \noteOn,  spec: \midiVel),
+						(key: \off, midiMsgType: \noteOff, spec: \midiBut,
+							elementType: \padUp)
+				]));
+			},
+			// others
+			noteOnOffBut: { |dict|
+				var shared = ().putAll(dict);
+				dict.clear.putAll((
+					shared: shared,
+					\shareGui: true,
+					\elements: [
+						(key: \on,  midiMsgType: \noteOn,  spec: \midiBut),
+						(key: \off, midiMsgType: \noteOff, spec: \midiBut, elementType: \padUp)
+				]));
+			},
+			noteOnOffVel: { |dict|
+				var shared = ().putAll(dict);
+				dict.clear.putAll((
+					shared: shared,
+					\shareGui: true,
+					\elements: [
+						(key: \on,  midiMsgType: \noteOn,  spec: \midiVel),
+						(key: \off, midiMsgType: \noteOff, spec: \midiVel, elementType: \padUp)
+				]));
+			},
+			noteOnOffTouch: { |dict|
+				var shared = ().putAll(dict);
+				dict.clear.putAll((
+					shared: shared,
+					\shareGui: true,
+					\elements: [
+						(key: \on,  midiMsgType: \noteOn,  spec: \midiVel),
+						(key: \off, midiMsgType: \noteOff, spec: \midiBut, elementType: \padUp),
+						(key: \touch, midiMsgType: \polytouch, spec: \midiVel, elementType: \padMove)
+				]));
+			},
+			noteOnOffVelTouch: { |dict|
+				var shared = ().putAll(dict);
+				dict.clear.putAll((
+					shared: shared,
+					\shareGui: true,
+					\elements: [
+						(key: \on,  midiMsgType: \noteOn,  spec: \midiVel),
+						(key: \off, midiMsgType: \noteOff, spec: \midiVel, elementType: \padUp),
+						(key: \touch, midiMsgType: \polytouch, spec: \midiVel, elementType: \padMove)
+				]));
+			},
+			// fader touch on/off + control
+			// steinberg CMC uses this
+			noteOnOffButCtl: { |dict|
+				var shared = ().putAll(dict);
+				dict.clear.putAll((
+					shared: shared,
+					\shareGui: true,
+					\elements: [
+						(key: \on,  midiMsgType: \noteOn,  spec: \midiBut),
+						(key: \off, midiMsgType: \noteOff, spec: \midiBut, elementType: \padUp),
+						(key: \ctl, midiMsgType: \control, spec: \midiVel, elementType: \padMove)
+				]));
+			},
+			// velocity on, but off, pressure -> control
+			noteOnOffCtl: { |dict|
+				var shared = ().putAll(dict);
+				dict.clear.putAll((
+					shared: shared,
+					\shareGui: true,
+					\elements: [
+						(key: \on,  midiMsgType: \noteOn,  spec: \midiVel),
+						(key: \off, midiMsgType: \noteOff, spec: \midiBut, elementType: \padUp),
+						(key: \ctl, midiMsgType: \control, spec: \midiVel, elementType: \padMove)
+				]));
+			},
+		);
+	}
+
+	*deepExpand { |groupDict, groupType|
+		^if (isElemFunc.value(groupDict)) {
+			groupType = groupType ?? { groupDict[\groupType] };
+			if (groupType.notNil) {
+				this.expandElemToGroup(groupDict, groupType);
+			} {
+				groupDict
+			}
+		} {
+			groupDict.elements.collect { |elemDict|
+				this.deepExpand(elemDict, groupType)
+			}
+		}
+	}
+
+	*expandElemToGroup { |dict, groupType|
+		var groupFunc;
+		groupFunc = groupFuncs[groupType];
+		if (groupFunc.isNil) {
+			"%: no groupFunc found at %\n".postf(thisMethod, groupType.cs);
+			^dict
+		};
+
+		groupFunc.value(dict);
+		dict.put(\groupType, groupType);
+		dict.elements.do { |elemDict|
+			elemDict.style = dict.style;
+		};
+		^dict;
 	}
 
 	// access to all
@@ -271,45 +411,85 @@ MKtlDesc {
 		^candidate.desc
 	}
 
-	*writeCache {
-		var dictForFolder = Dictionary.new, file;
 
-		descFolders.do { |folder, i|
-			var descs = MKtlDesc.loadDescs(folderIndex: i);
-			var path = folder +/+ cacheName;
+	// non-functional duplicate to updateCaches
+	// *checkCaches {
+	// 	var cacheTime, lastDescTime;
+	// 	descFolders.do { |folder, i|
+	// 		var files = this.findFile("*", i);
+	// 		var newestDescTime;
+	// 		var cacheTime = 0, cachePath = folder +/+ cacheName;
+	// 		if (files.notEmpty) {
+	// 			newestDescTime = files.collect(File.mtime(_)).maxItem;
+	// 			if (cachePath.pathMatch.notEmpty) {
+	// 				cacheTime = File.mtime(cachePath);
+	// 			};
+	// 			if (newestDescTime > cacheTime) { this.writeCache(i) }
+	// 		};
+	// 	}
+	// }
 
-			descs.collect { |desc|
-				var filename = desc.fullDesc.filename;
-				var idInfo = desc.fullDesc.idInfo;
-				dictForFolder.put(filename, idInfo);
+	*updateCaches {
+		descFolders.do { |path, index|
+			var descDates, cacheDate;
+
+
+			descDates = MKtlDesc.findFile(folderIndex: index).collect(File.mtime(_));
+
+			if (File.exists(path +/+ MKtlDesc.cacheName)) {
+				cacheDate = File.mtime(path +/+ MKtlDesc.cacheName);
 			};
-			file = File.open(path, "w");
+
+			// write cahce files also when directory is empty
+			// but not if empty directory already contains cache file
+			if (cacheDate.isNil or: {(descDates.maxItem ? -1) > cacheDate}) {
+				this.writeCache(index);
+			};
+		};
+	}
+
+	*writeCaches {
+		descFolders.size.do { |i| this.writeCache(i) }
+	}
+
+	*writeCache { |folderIndex = 0|
+		var folder = descFolders[folderIndex];
+		var localDescs = this.loadDescs(folderIndex: folderIndex);
+		var dictForFolder = Dictionary.new;
+		var path = folder +/+ cacheName;
+
+		localDescs.collect { |desc|
+			var filename = desc.fullDesc.filename;
+			var idInfo = desc.fullDesc.idInfo;
+			dictForFolder.put(filename, idInfo);
+		};
+		File.use(path, "w", { |file|
 			if (file.isOpen) {
 				file.write("Dictionary[\n");
 				dictForFolder.sortedKeysValuesDo { |key, val|
 					file.write("\t" ++ (key -> val).cs ++ ",\n");
 				};
 				file.write("]\n");
-				file.close;
-				"MKtlDesc cache written with % entries at %.\n".postf(dictForFolder.size, path);
+				"MKtlDesc cache written with % entries at %.\n"
+				.postf(dictForFolder.size, path);
 			} {
 				warn("MKtlDesc: could not write cache at %.\n".format(path));
 			}
-		};
+		});
 	}
 
-	*loadCache {
-		// clear first? maybe better not
-		descFolders.do { |folder|
-			var loadedList = (folder +/+ cacheName).load;
-			//	("// loadedList: \n" + loadedList.cs).postln;
-			if (loadedList.isNil) {
-				"% : no cache file found.\n".postf(thisMethod);
-				^this
-			};
-			loadedList.keysValuesDo { |filename, idInfo|
-				fileToIDDict.put(filename, idInfo);
-			};
+	*loadCaches {
+		descFolders.do { |folder| this.loadCache(folder) };
+	}
+
+	*loadCache { |folder|
+		var loadedList = (folder +/+ cacheName).load;
+		if (loadedList.isNil) {
+			"% : no cache file found.\n".postf(thisMethod);
+			^this
+		};
+		loadedList.keysValuesDo { |filename, idInfo|
+			fileToIDDict.put(filename, idInfo);
 		};
 	}
 
@@ -494,10 +674,10 @@ MKtlDesc {
 		if (multi.not) {
 			if (paths.size > 1) {
 				warn("MktlDesc: found multiple matching files!");
-					paths.do { |path|
-						"\t".post; path.basename.postcs;
-					};
-					warn("loading first of %\n:\t%.\n".format(paths.size, paths[0].basename.cs));
+				paths.do { |path|
+					"\t".post; path.basename.postcs;
+				};
+				warn("loading first of %\n:\t%.\n".format(paths.size, paths[0].basename.cs));
 				^this.fromPath(paths[0]);
 			};
 		};
@@ -559,11 +739,16 @@ MKtlDesc {
 
 		this.findParent;
 
-		// make elements in both forms
 		this.inferName;
+		// prepare elements, share and expand first
+		MKtlDesc.sharePropsToElements(this.elementsDesc);
+		MKtlDesc.deepExpand(this.elementsDesc);
+		// do it again, in case there were elems to expand
+		MKtlDesc.sharePropsToElements(this.elementsDesc);
+
+		// now make elements in both dict and array form
 		elementsDict = ();
 		this.makeElemKeys(this.elementsDesc, []);
-		MKtlDesc.sharePropsToElements(this.elementsDesc);
 
 		if (this.protocol == \midi) {
 			this.getMidiMsgTypes;
@@ -781,8 +966,8 @@ MKtlDesc {
 		// lower half pad for noteOff:
 		notePair.elements[1].put(
 			\style, style.copy.put(\height, halfHeight)
-				// push down only if row is given,
-				// else leave row nil for crude auto-positioning
+			// push down only if row is given,
+			// else leave row nil for crude auto-positioning
 			.put(\row, style.row !? { style.row + 0.45 })
 		);
 
@@ -817,7 +1002,7 @@ MKtlDesc {
 			msgTypesUsed.remove(\noteOnOff);
 		};
 
-		fullDesc.put(\msgTypesUsed, msgTypesUsed);
+		fullDesc.put(\msgTypesUsed, msgTypesUsed.asArray.sort);
 
 		if (missing.notEmpty) {
 			fullDesc.put(\elementsWithMissingType, missing);

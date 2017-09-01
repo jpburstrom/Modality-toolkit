@@ -37,6 +37,7 @@ pads and 4velmode also send sysex on port 2;
 // 15: (100..115),
 // 16: all sysex messages // no idea what they are for
 
+MKtlDesc.loadDescs;
 m.free; m = MKtl(\pd, "*cmc-pd_port1");
 m.gui;
 m.postElements;
@@ -49,7 +50,7 @@ parentDesc: "steinberg-cmc-pd",
 
 status: (
 	linux: "unknown",
-	osx: "tested and working. 2016-03-16, adc",
+	osx: "sketch only. best mapping still to be figured out. 2016-11-07, adc",
 	win: "unknown"),
 
 idInfo: (deviceName: "Steinberg CMC-PD", srcPortIndex: 0, destPortIndex: 0),
@@ -76,20 +77,21 @@ elementsDesc: (
 			elements: [
 				(
 					key: \1,
+					shared: (groupType: \noteOnOffBut),
 					elements: [35, 36, 38, 40,   39,44,42,46,   41,45,47,48,  51,55,49,56]
 					.collect { |num, i|
-						MKtlDesc.notePair(i, num,
-							(style: (row: 4 - (i div: 4), column: i % 4))
-						).put(\page, 0)
+						(key: i, midiNum: num, \page: 0,
+							shared: (style: (row: 4 - (i div: 4), column: i % 4))
+						)
 					}
 				),
-				// \2: (4..19)   .collect { |num, i| MKtlDesc.notePair(i, num) },
-				// \3: (20..35)  .collect { |num, i| MKtlDesc.notePair(i, num) },
-				// \4: (36..51)  .collect { |num, i| MKtlDesc.notePair(i, num) },
-				// \5: (52..67)  .collect { |num, i| MKtlDesc.notePair(i, num) },
-				// \6: (68..83)  .collect { |num, i| MKtlDesc.notePair(i, num) },
-				// \7: (84..99)  .collect { |num, i| MKtlDesc.notePair(i, num) },
-				// \8: (100..115).collect { |num, i| MKtlDesc.notePair(i, num) }
+				// \2: (4..19)   .collect { |num, i| (key: i, midiNum: num) },
+				// \3: (20..35)  .collect { |num, i| (key: i, midiNum: num) },
+				// \4: (36..51)  .collect { |num, i| (key: i, midiNum: num) },
+				// \5: (52..67)  .collect { |num, i| (key: i, midiNum: num) },
+				// \6: (68..83)  .collect { |num, i| (key: i, midiNum: num) },
+				// \7: (84..99)  .collect { |num, i| (key: i, midiNum: num) },
+				// \8: (100..115).collect { |num, i| (key: i, midiNum: num) }
 			]
 		)
 	]

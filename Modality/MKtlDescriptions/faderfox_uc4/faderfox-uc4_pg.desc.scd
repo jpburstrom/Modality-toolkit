@@ -22,6 +22,10 @@ knpg8 [\kn, \pbt][index]
 
 // see example and explanation here:
 "Tutorials/Hardware_paging".openHelpFile;
+
+MKtlDesc.loadDescs("*uc4_pg");
+m.free; m = MKtl(\uc4, "*uc4_pg"); m.trace.gui;
+
 ****/
 
 (
@@ -66,14 +70,16 @@ elementsDesc: (
 				// note-buttons
 				(
 					key: \pbt,
-					shared: ('elementType': 'button', 'spec': 'midiBut'),
+					shared: ('elementType': 'pad', groupType: \noteOnOffBut,
+						\page: gr_i, 'spec': 'midiBut'),
 					// 0-7, 8-15 ... 56-63
 					elements: ((0..7) + (gr_i * 8)).collect { |num, i|
-						MKtlDesc.notePair(nil, num,
-							(
-								\page: gr_i,
+						(
+							key: nil, midiNum: num,
+							shared:	(
 								style: (\row: i div: 4 * 2 + 0.8,
 									\column: i % 4 * 2 + 0.5,
+									height: 0.8,
 									showLabel: true))
 						)
 					}
@@ -96,7 +102,7 @@ elementsDesc: (
 			elements: 8.collect { |i|
 				(
 					midiNum: slNum1 + i,
-					\style: ( \row: 4, \column: i, height: 2, showLabel: true),
+					\style: ( \row: 4, \column: i, height: 2),
 					\page: gr_i
 				)
 			}
@@ -104,13 +110,13 @@ elementsDesc: (
 
 		var btElems = (
 			key: \bt,
-			shared: ('elementType': 'button', 'spec': 'midiBut'),
+			shared: ('elementType': 'pad', \page: gr_i, groupType: \noteOnOffBut, 'spec': 'midiBut'),
 			// 0-7, 8-15 ... 56-63
 			elements: 8.collect { |i|
-				MKtlDesc.notePair(nil, (btNum1[gr_i] + i),
-					(
-						\page: gr_i,
-						style: ( \row: 7, \column: i, showLabel: true)
+				(
+					key: nil, midiNum: (btNum1[gr_i] + i),
+					shared:	(
+						style: ( \row: 7, \column: i, height: 0.8)
 					)
 				)
 			};
@@ -126,7 +132,7 @@ elementsDesc: (
 	[
 		( key: 'xfader', 'midiNum':  112, 'midiMsgType': 'cc',
 			'elementType': 'slider', 'spec': 'midiCC',
-			\style: ( \row: 6, \column: 2.5, height: 1, width: 3, showLabel: true)
+			\style: ( \row: 6, \column: 2.5, height: 1, width: 3)
 	)]
 
 )

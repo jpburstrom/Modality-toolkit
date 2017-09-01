@@ -35,7 +35,7 @@ elementsDesc: (
 			key: \knRel,
 			shared: ('midiMsgType': 'control', 'elementType': 'knob', 'midiChan':  0, 'spec': 'midiCC'),
 			elements: (16..23).collect { |ccnum, i|
-				('midiNum': ccnum, style: (row: i div: 4, column: i % 4, showLabel: true ))
+				('midiNum': ccnum, style: (row: i div: 4, column: i % 4 ))
 			}
 		),
 		// // active after bt MIDI was pressed
@@ -43,14 +43,14 @@ elementsDesc: (
 		// 	key: \kn,
 		// 	shared: ('midiMsgType': 'cc', 'elementType': 'knob', 'midiChan':  0, 'spec': 'midiCC'),
 		// 	elements: [74, 71, 10, 7, 73, 72, 91, 93].collect { |ccnum, i|
-		// 		('midiNum': ccnum, style: (row: i div: 4 + 2, column: i % 4, showLabel: true ))
+		// 		('midiNum': ccnum, style: (row: i div: 4 + 2, column: i % 4 ))
 		// 	}
 		// ),
 
 
 		(key: \bt,
-			shared: ('elementType': 'pad', spec: 'midiBut'),
-			elements: MKtlDesc.notePairs([
+			shared: ('elementType': 'pad', groupType: \noteOnOffBut, spec: 'midiBut' ),
+			elements: [
 				['EQ1', 42, (style: (row: 2, column: 0))],
 				['EQ2', 50, (style: (row: 2, column: 1))],
 				['EQ3', 44, (style: (row: 2, column: 2))],
@@ -67,7 +67,9 @@ elementsDesc: (
 				['chanR', 49, (style: (row: 5, column: 1))],
 				['R', 81, (style: (row: 5, column: 2))],
 				['W', 78, (style: (row: 5, column: 3))]
-			])
+			].collect { |list, i|
+				(key: list[0], midiNum: list[1], shared: list[2])
+			}
 		),
 	]
 )

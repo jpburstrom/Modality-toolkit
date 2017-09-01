@@ -89,30 +89,19 @@ elementsDesc: (
 		// // ------ cc -------------
 		// ( key: 'cc_9_058', 'midiNum':  58, 'midiChan': 9, 'midiMsgType': 'cc', 'elementType': 'slider', 'spec': 'midiCC'),
 		// ( key: 'cc_9_070', 'midiNum':  70, 'midiChan': 9, 'midiMsgType': 'cc', 'elementType': 'slider', 'spec': 'midiCC'),
-
-		// (
-		// 	key: \pad,
-		// 	shared:  (\elementType: \pad,
-		// 	\midiChan: 9, \spec: \midiVel, \ioType: \inout),
-		// 	elements: [60, 62, 64, 65, 67, 69].collect { |num, i| (
-		// 		shared: (midiNum: num),
-		// 		elements: [
-		// 			(key: \on,  midiMsgType: \noteOn ),
-		// 			(key: \off, midiMsgType: \noteOff)
-		// 		]
-		// 	)}
-		// )
-
-		(key: \pad,
-			shared: (\elementType: \pad, \midiChan: 9, \spec: \midiVel, \ioType: \inout),
-			elements: MKtlDesc.notePairs([
-				['1', 60, (style: (row: 0, column: 0))],
-				['2', 62, (style: (row: 0, column: 1))],
-				['3', 64, (style: (row: 0, column: 2))],
-				['4', 65, (style: (row: 1, column: 0))],
-				['5', 67, (style: (row: 1, column: 1))],
-				['6', 69, (style: (row: 1, column: 2))],
-			])
+		(
+			key: \pad,
+			shared: (\elementType: \pad, groupType: \noteOnOff,
+				\midiChan: 9, \spec: \midiVel, \ioType: \inout
+			),
+			elements: [
+				(key: '1', midiNum: 60, shared: (style: (row: 0, column: 0))),
+				(key: '2', midiNum: 62, shared: (style: (row: 0, column: 1))),
+				(key: '3', midiNum: 64, shared: (style: (row: 0, column: 2))),
+				(key: '4', midiNum: 65, shared: (style: (row: 1, column: 0))),
+				(key: '5', midiNum: 67, shared: (style: (row: 1, column: 1))),
+				(key: '6', midiNum: 69, shared: (style: (row: 1, column: 2))),
+			]
 		),
 
 	]

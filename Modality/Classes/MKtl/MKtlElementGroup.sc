@@ -4,6 +4,9 @@ MKtlElementGroup : MKtlElement {
 	var <dict;
 	var <>groupAction;
 
+	var <>useSingleGui = false;
+	var <>groupType;
+
 	*new { |name, source, elements|
 		^super.newCopyArgs( name, source ).elements_(elements);
 	}
@@ -36,6 +39,9 @@ MKtlElementGroup : MKtlElement {
 					group.shared = desc[\shared];
 				};
 
+				group.useSingleGui = desc.useSingleGui ? false;
+				group.groupType = desc.groupType;
+
 				group.do { |elem, i|
 					var key = if (elem.isKindOf(MKtlElementGroup)) {
 						elem.name;
@@ -65,6 +71,7 @@ MKtlElementGroup : MKtlElement {
 		var array;
 		tags = Set[];
 		dict = ();
+		elemDesc = ();
 		elements = elements ?? { Array.new };
 		case { elements.isKindOf( Dictionary ) } {
 			elements.sortedKeysValuesDo({ |key, value|
@@ -87,7 +94,8 @@ MKtlElementGroup : MKtlElement {
 					dict.put( key, item );
 					item;
 				} { item.isKindOf(MKtlElement) } {
-					dict.put(item.name, item);
+					// "gets here?".postln;
+					// dict.put(item.name, item);
 					item
 				};
 			});
@@ -187,7 +195,6 @@ MKtlElementGroup : MKtlElement {
 	}
 
 	indexOf { |item|
-		"// using %\n".postf(thisMethod);
 		^this.elemIndexOf(item);
 	}
 
@@ -197,8 +204,24 @@ MKtlElementGroup : MKtlElement {
 
 	do { |function| elements.do( function ); }
 
+	doRecursive {|function, includeGroups = true|
+		var doOne = { |elemOrGroup, depth|
+			if (elemOrGroup.isKindOf(MKtlElementGroup)) {
+				if(includeGroups) { function.value(elemOrGroup, depth) };
+				elemOrGroup.do({ |item| doOne.value(item, depth + 1) });
+			} {
+				function.value(elemOrGroup);
+			};
+		};
+		doOne.value(this, 0);
+	}
+
 	flat {
 		^this.elements.flat;
+	}
+
+	flatIf { |func|
+		^this.elements.flatIf(func);
 	}
 
 	prFlat { |list|

@@ -4,9 +4,9 @@ Novation Launch Control
 minimal code examples for testing, such as:
 
 k = MKtl('nlc', "novation-launchcontrol");
-k.elementAt(0, kn, 0).action = { yo.postln; };
-k.elementAt(0, kn, 1).action = { 1.postcs; };
-
+k.elementAt(0, \kn, 0).action = { \yo.postln; };
+k.elementAt(0, \kn, 1).action = { 1.postcs; };
+k.gui;
 
 
 
@@ -66,14 +66,15 @@ elementsDesc: (
 				),
 				(
 					key: \bt,
-					shared: ('elementType': 'button', 'spec': 'midiNote', \ioType: \inout),
+					shared: ('elementType': 'pad', 'spec': 'midiNote', \ioType: \inout),
 					elements: ((9..12) ++ (25..28)).collect{|num, i|
-						MKtlDesc.notePair((i+1).asSymbol, num,
+						(
+							key: (i+1).asSymbol,
+							groupType: \noteOnOffBut,
 							shared: (
-								style: (
-									row: 2,
-									column: i
-								)
+								groupType: \noteOnOffBut,
+								midiNum: num,
+								style: ( row: 2, column: i )
 							)
 						)
 					}
@@ -94,7 +95,7 @@ elementsDesc: (
 						(
 							'key': key,
 							'midiNum': num,
-							'style':  (row: row, column: col, \showLabel: true)
+							'style':  (row: row, column: col)
 						)
 
 					}

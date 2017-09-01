@@ -23,8 +23,8 @@ status: (
 idInfo:"Steinberg CMC-FD",
 
 deviceInfo: (
-	vendorURI: "http://www.steinberg.net/en/products/controllers/cmc_series/models/cmc_fd.html",
-	// manualURI: "",
+	vendorURI: "https://www.steinberg.net/en/products/audio_interfaces/cmc_series/specs_downloads.html",
+	manualURI: "https://www.steinberg.net/fileadmin/files/PRODUCTS/Controller/CMC/Downloads/CMC_Guide_Book_v1.pdf",
 	// description: "",
 	features: ["4 touch faders" ],
 	longName: "Steinberg CMC-FD",
@@ -49,36 +49,41 @@ elementsDesc: (
 		),
 
 		// the buttons
-		MKtlDesc.notePair(\shift, 70, (style: (row: 6, column: 1.5))),
+		(
+			key: \shift, midiNum: 70, groupType: \noteOnOffBut,
+			shared: (groupType: \noteOnOffBut, style: (row: 6, column: 1.5))
+		),
 		(
 			key: \bt,
+			shared: ('midiMsgType': 'cc' ), // ???
 			elements: [
-				MKtlDesc.notePair('chanL', 48, (style: (row: 7, column: 0))),
-				MKtlDesc.notePair('chanR', 49, (style: (row: 7, column: 1))),
-				MKtlDesc.notePair('bankL', 46, (style: (row: 7, column: 2))),
-				MKtlDesc.notePair('bankR', 47, (style: (row: 7, column: 3))),
+				(key: 'chanL', midiNum: 48, shared: (style: (row: 7, column: 0))),
+				(key: 'chanR', midiNum: 49, shared: (style: (row: 7, column: 1))),
+				(key: 'bankL', midiNum: 46, shared: (style: (row: 7, column: 2))),
+				(key: 'bankR', midiNum: 47, shared: (style: (row: 7, column: 3))),
 			]
 		),
 
 				// fader touched or not
 		(
 			key: 'ftouch',
+			shared: ('midiMsgType': 'cc' ), // ???
 			// shared: ('elementType': 'button', 'spec': 'midiVel'),
 			elements: (104..107).collect { |num, i|
-				MKtlDesc.notePair(
-					(i+1).asSymbol, num,
-					(style: (row: 3.9, column: i))
+				(key: (i+1).asSymbol, midiNum: num,
+					shared: (style: (row: 3.9, column: i))
 				);
 			}
 		),
 		// fader touched when shift is down sends channel mute
 		(
 			key: 'fmute',
+			shared: ('midiMsgType': 'cc' ), // ???
 			// shared: ('elementType': 'button', 'midiChan': 0, 'spec': 'midiBut'),
 			elements: (8..11).collect { |num, i|
-				MKtlDesc.notePair(
-					(i+1).asSymbol, num,
-					(style: (row: 4.8, column: i))
+				(
+					key: (i+1).asSymbol, midiNum: num,
+					shared: (style: (row: 4.8, column: i))
 				);
 			}
 		),

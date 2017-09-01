@@ -58,7 +58,10 @@ elementsDesc: (
 				( elements: 8.collect { |i|
 					(
 						midiNum: num1 + i,
-						\style: ( \row: i div: 4 * 2, \column: i % 4 * 2 + 0.5),
+						\style: ( \row: i div: 4 * 2,
+							\column: i % 4 * 2 + 0.5,
+							showLabel: true
+						),
 						\page: gr_i
 					)
 				} )
@@ -67,22 +70,16 @@ elementsDesc: (
 		// note-buttons
 		(
 			key: \pbt,
-			shared: ('midiChan': 0, 'elementType': 'button', 'spec': 'midiCC'),
+			shared: ('midiChan': 0, 'elementType': 'pad', 'spec': 'midiCC'),
 			elements: (0..63).clump(8).collect { |list, gr_i|
 				(
 					elements: list.collect { |num, i|
 						(
-							shared:  (midiNum: num, page: gr_i),
-							elements: [
-								(
-									key: \on, 'midiMsgType':  'noteOn',
-									\style: ( \row: i div: 4 * 2 + 1, \column: i % 4 * 2 + 0.5, height: 0.5)
-								),
-								(
-									key: \off, 'midiMsgType': 'noteOff',
-									\style: ( \row: i div: 4 * 2 + 1.4, \column: i % 4 * 2 + 0.5, height: 0.5)
-								)
-							]
+							groupType: \noteOnOffBut,
+							shared:  (midiNum: num, page: gr_i, groupType: \noteOnOffBut,
+								style: ( \row: i div: 4 * 2 + 1, \column: i % 4 * 2 + 0.5,
+									height: 0.75)
+							)
 						)
 					}
 				)
@@ -110,20 +107,15 @@ elementsDesc: (
 		),
 		(
 			key: \bt,
-			shared: ('midiChan': 0, 'elementType': 'button', 'spec': 'midiCC'),
+			shared: ('midiChan': 0, 'elementType': 'pad', 'spec': 'midiCC'),
 			elements: (64..127).clump(8).collect { |list, gr_i|
 				(
 					elements: list.collect { |num, i|
 						(
-							shared:  (midiNum: num, page: gr_i),
-							elements: [
-								(key: \on, 'midiMsgType':  'noteOn',
-									\style: ( \row: 7, \column: i, height: 0.5)
-								),
-								(key: \off, 'midiMsgType': 'noteOff',
-									\style: ( \row: 7.4, \column: i, height: 0.5)
-								)
-							]
+							groupType: \noteOnOffBut,
+							shared:  (midiNum: num, page: gr_i, groupType: \noteOnOffBut,
+								\style: ( \row: 7, \column: i, height: 0.75)
+							)
 						)
 					}
 				)

@@ -55,6 +55,25 @@ Iterate a function for its enclosed MKtlElements and MKtlGroups
 code::
 m.elementGroup.do { |el| el.postln };
 ::
+
+METHOD:: doRecursive
+Recursively evaluate a function on itself and its linked MKtlElements and MKtlGroups
+argument:: function
+the function to evaluate.
+Its parameters are
+list::
+## strong::element:: the element
+## strong::depth:: current depth within the traversed tree
+::
+
+argument:: includeGroups
+if code::true::, function gets evaluated also on code::MKtlElementGroup::s.
+
+code::
+m.elementGroup.doRecursive { |el, depth| [el.name, depth].postln };
+::
+
+
 METHOD:: asArray
 
 returns:: a nested code::Array:: structure of the enclosed elements. Any enclosed element that is an code::MKtlElementGroup:: will be converted into a normal code::Array::
@@ -108,7 +127,7 @@ m.elAt( \bt ); // returns the MKtlElementGroup containing the buttons
 m.elAt( \bt, 0 ).flat; // creates and returns an Array with the first row of buttons
 
 // make a group of the upper row of buttons
-a = MKtlElementGroup( 'group', m.elAt( \bt, 0 ).flat );
+a = MKtlElementGroup( 'group', m, m.elAt( \bt, 0 ).flat );
 
 // assign an action to be fired when any element in the group is touched
 // the first argument will be the touched MKtlElement, the second argument

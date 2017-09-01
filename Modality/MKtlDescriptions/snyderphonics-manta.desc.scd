@@ -6,7 +6,7 @@ elementTypes: [\pad, \slider],
 deviceType: \manta,
 status: (
 	linux: "unknown",
-	osx: "tested and working. 2016-04-10, adc",
+	osx: "tested and working. 2017-02-11, lfsaw",
 	win: "unknown"),
 
 idInfo: "manta",
@@ -17,12 +17,23 @@ netAddrInfo: ( srcPort: 31417, ipAddress: "127.0.0.1", recvPort: 31416 ),
 specialMessages: (
 	enableLEDControl: [
 		[ "/manta/ledcontrol", "padandbutton", 1 ],
-		[ "/manta/ledcontrol", "slider", 1 ],
-		[ "/manta/ledcontrol", "button", 1 ]
-]),
+		[ "/manta/ledcontrol", "slider", 1 ]
+	],
+	disableLEDControl: [
+		[ "/manta/ledcontrol", "padandbutton", 0 ],
+		[ "/manta/ledcontrol", "slider", 0 ]
+	],
+	enablePadButtonLEDControl: [
+		[ "/manta/ledcontrol", "padandbutton", 1 ]
+	],
+
+	disablePadButtonLEDControl: [
+		[ "/manta/ledcontrol", "padandbutton", 0 ]
+	]
+),
 testCode: {
-	// start MantaOSC terminal program. this sends on port
-	"/Users/adc/scgit/libmanta/MantaOSC/build/MantaOSC".runInTerminal;
+	// start MantaOSC terminal program.
+	"/<PATH/TO/MANTAOSC>/MantaOSC 0 31417 57120".runInTerminal;
 
 	// make a manta mktl
 	m = MKtl(\mt, "*manta");
@@ -38,6 +49,39 @@ testCode: {
 	OSCFunc.trace(false);
 
 	m.elAt.action = { |el| [el.name, el.value.round(0.0001)].postln };
+
+	// enable LED control and set one light
+	m.sendSpecialMessage(\enableLEDControl);
+	m.elAt(\pad, 0, \led).deviceValue = "amber";
+
+	// some light patterns
+	q = q ? ();
+
+	q.ledPatterns = IdentityDictionary[
+		('spiral'          -> #[1,0,1,1,1,1,0,1,0,1,0,0,0,1,0,1,0,1,0,1,1,0,1,0,1,0,1,0,0,1,0,1,0,1,0,1,1,1,0,1,0,1,0,0,0,0,1,0]),
+		('leftRight'       -> #[1,0,0,0,0,0,0,1,1,0,0,0,0,0,0,1,1,0,0,0,0,0,0,1,1,0,0,0,0,0,0,1,1,0,0,0,0,0,0,1,1,0,0,0,0,0,0,1]),
+		('flower'          -> #[0,1,1,0,1,0,1,1,1,0,1,0,0,1,0,1,0,1,1,0,1,0,1,1,1,1,0,1,0,1,1,0,1,0,1,0,0,1,0,1,1,1,0,1,0,1,1,0]),
+		('hStripes'        -> #[1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0]),
+		('smallChecker'    -> #[1,1,0,0,1,1,0,0,1,1,0,0,1,1,0,0,1,1,0,0,1,1,0,0,0,0,1,1,0,0,1,1,0,0,1,1,0,0,1,1,0,0,1,1,0,0,1,1]),
+		('checker'         -> #[1,1,1,1,0,0,0,0,1,1,1,1,0,0,0,0,1,1,1,1,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,1,1,1,1,0,0,0,0,1,1,1,1]),
+		('vStripes'        -> #[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0]),
+		('frame'           -> #[0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,0,0,1,0,0,0,0,1,0,0,1,0,0,0,0,1,0,0,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0]),
+		('rStripes'        -> #[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0]),
+		('lStripes'        -> #[1,0,1,0,1,0,1,0,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,0,1,0,1,0,1]),
+		('reflection'      -> #[1,0,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,1,0,1,1,1,1,1,1,0,1,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,0,1]),
+		('realTriads'      -> #[1,1,0,1,1,0,1,1,1,0,0,1,0,0,1,0,1,1,0,1,1,0,1,1,1,0,0,1,0,0,1,0,1,1,0,1,1,0,1,1,1,0,0,1,0,0,1,0]),
+		('twoStripes'      -> #[1,1,0,0,1,1,0,0,1,1,0,0,1,1,0,0,1,1,0,0,1,1,0,0,1,1,0,0,1,1,0,0,1,1,0,0,1,1,0,0,1,1,0,0,1,1,0,0]),
+		('squareFrame'     -> #[0,1,1,1,1,1,1,0,0,1,0,0,0,0,1,0,0,1,0,1,1,0,1,0,0,1,0,1,1,0,1,0,0,1,0,0,0,0,1,0,0,1,1,1,1,1,1,0]),
+		('upperLower'      -> #[1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1]),
+		('ring'            -> #[1,0,1,1,1,1,0,1,0,1,0,0,0,1,0,1,0,1,0,1,1,0,1,0,1,0,1,0,1,0,1,0,0,1,0,1,1,0,1,0,0,1,0,0,0,1,0,1]),
+		('checkeredTriads' -> #[1,1,0,1,1,0,1,1,1,0,0,1,0,0,1,0,0,0,1,0,0,1,0,0,0,1,1,0,1,1,0,1,1,1,0,1,1,0,1,1,1,0,0,1,0,0,1,0]),
+		('lrBurst'         -> #[1,1,0,1,0,1,0,0,0,1,0,1,1,0,1,1,1,0,1,0,1,0,1,0,0,1,0,1,0,1,0,1,1,1,0,1,1,0,1,0,0,0,1,0,1,0,1,1])
+	];
+
+	q.ledPatterns.choose.do{|val, i|
+		m.elAt(\pad, 0, \led).value = 0.5 * val;
+	};
+
 },
 
 specs: (

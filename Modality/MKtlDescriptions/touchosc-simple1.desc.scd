@@ -37,7 +37,7 @@ OSCMKtlDevice.verbose = false;
 MKtl.all.do(_.free).clear;
 // make our tosc
 t = MKtl(\tosca, "touchosc-simple1");
-
+t.gui;
 // trace to look what address the touchOSC app sends from:
 OSCFunc.trace(true);
 // and turn off tracing.

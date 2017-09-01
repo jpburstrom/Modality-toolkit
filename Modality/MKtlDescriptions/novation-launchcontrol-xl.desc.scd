@@ -79,14 +79,18 @@ elementsDesc: (
 				),
 				(
 					key: \bt,
-					shared: ('elementType': 'button', 'spec': 'midiNote', \ioType: \inout),
+					shared: ('elementType': 'pad', groupType: \noteOnOffBut,
+						'spec': 'midiNote', \ioType: \inout),
 					elements: [
 						(
 							key: 'fcs',
-							shared: ('elementType': 'button', 'spec': 'midiNote', \ioType: \inout),
+							shared: ('elementType': 'pad', 'spec': 'midiNote', \ioType: \inout),
 							elements: ((41..44) ++ (57..60)).collect{|num, i|
-								MKtlDesc.notePair((i+1).asSymbol, num,
+
+								(
+									key: (i+1).asSymbol,
 									shared:(
+										midiNum: num,
 										style: (
 											row: 7,
 											column: i
@@ -97,14 +101,14 @@ elementsDesc: (
 						),
 						(
 							key: 'ctl',
-							shared: ('elementType': 'button', 'spec': 'midiNote', \ioType: \inout),
+							shared: ('elementType': 'pad', groupType: \noteOnOffBut,
+								'spec': 'midiNote', \ioType: \inout),
 							elements:  ((73..76) ++ (89..92)).collect { |num, i|
-								MKtlDesc.notePair((i+1).asSymbol, num,
+								(
+									key: (i+1).asSymbol,
 									shared:(
-										style: (
-											row: 8,
-											column: i
-										)
+										midiNum: num,
+										style: ( row: 8, column: i )
 									)
 								)
 							}
@@ -115,7 +119,8 @@ elementsDesc: (
 
 				(
 					key: \slct,
-					shared: ('elementType': 'button', 'spec': 'midiNote', \ioType: \inout),
+					shared: ('elementType': 'pad', groupType: \noteOnOffBut,
+						'spec': 'midiNote', \ioType: \inout),
 					elements: [
 						[ \device, 105, 3, 8.5 ],
 						[ \mute,   106, 4, 8.5 ],
@@ -124,9 +129,9 @@ elementsDesc: (
 					].collect{|list|
 						var key, num, row, col;
 						#key, num, row, col = list;
-
-						MKtlDesc.notePair(key, num,
-							shared: (style: (row: row, column: col, \showLabel: true))
+						(
+							key: key,
+							shared: (midiNum: num, style: (row: row, column: col ))
 						)
 					}
 				),
@@ -146,43 +151,42 @@ elementsDesc: (
 						(
 							'key': key,
 							'midiNum': num,
-							'style':  (row: row, column: col, \showLabel: true)
+							'style':  (row: row, column: col )
 						)
 
 					}
 
 				)
-
-
-				//
-				// 	[	// key, midinum, row, col
-				// 		[ \up,     104, 1, 8 ],
-				// 		[ \down,   105, 1, 9 ],
-				// 		[ \left,   106, 2, 8 ],
-				// 		[ \right,  107, 2, 9 ],
-				//
-				// 		[ \device, 105, 3, 8.5 ],
-				// 		[ \mute,   106, 4, 8.5 ],
-				// 		[ \solo,   107, 5, 8.5 ],
-				// 		[ \arm,    108, 6, 8.5 ]
-				//
-				// 	].collect { |list|
-				// 		var onOffGroup, style;
-				// 		var key, num, row, col;
-				//
-				// 		#key, num, row, col = list;
-				// 		style = (row: row, column: col, \showLabel: true);
-				//
-				// 		onOffGroup = MKtlDesc.notePair(key, num).postcs;
-				// 		// onOffGroup.elements[0].put(\style, style);
-				// 		// onOffGroup.elements[0].put(\style,
-				// 		// 	style.copy.put(\row, style.row + 0.8)
-				// 		// );
-				// 		onOffGroup
-				// 	}
-				// )
 			]
 		)
 	}
 )
 );
+
+
+				// // check this when enabling it
+				// [	// key, midinum, row, col
+				// 	[ \up,     104, 1, 8 ],
+				// 	[ \down,   105, 1, 9 ],
+				// 	[ \left,   106, 2, 8 ],
+				// 	[ \right,  107, 2, 9 ],
+				//
+				// 	[ \device, 105, 3, 8.5 ],
+				// 	[ \mute,   106, 4, 8.5 ],
+				// 	[ \solo,   107, 5, 8.5 ],
+				// 	[ \arm,    108, 6, 8.5 ]
+				//
+				// ].collect { |list|
+				// 	var onOffGroup, style;
+				// 	var key, num, row, col;
+				//
+				// 	#key, num, row, col = list;
+				// 	style = (row: row, column: col);
+				//
+				// 	onOffGroup = (key: key, midiNum: num).postcs;
+				// 	// onOffGroup.elements[0].put(\style, style);
+				// 	// onOffGroup.elements[0].put(\style,
+				// 	// 	style.copy.put(\row, style.row + 0.8)
+				// 	// );
+				// 	onOffGroup
+				// }

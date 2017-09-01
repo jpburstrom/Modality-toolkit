@@ -45,80 +45,83 @@ elementsDesc: (
 			shared: (elementType: 'pad',
 				midiChan: 0, spec: 'midiNote', ioType: \inout),
 			elements: (0..63).collect { |midiNote, i|
-				MKtlDesc.notePair(
-					(i+1).asSymbol, midiNote,
+				(
+					key: (i+1).asSymbol,
+					midiNum: midiNote,
+					groupType: \noteOnOff,
 					shared: (
+						groupType: \noteOnOff,
 						style: (
 							row: 7 - (i div: 8),
-							column: i % 8,
-							showLabel: true
+							column: i % 8
 						)
 					)
 				)
 			}
 		),
 		(
-			key: \navBut,
-			shared: (elementType: 'button',
+			key: \navBt,
+			shared: (elementType: 'pad',
 				midiChan: 0, spec: 'midiBut', ioType: \inout),
 			elements: (64..67).collect { |midiNote, i|
-				MKtlDesc.notePair(
-					(i+1).asSymbol, midiNote,
+				(
+					key: (i+1).asSymbol, midiNum: midiNote,
+					groupType: \noteOnOffBut,
 					shared: (
+						groupType: \noteOnOffBut,
 						style: (
 							row: 8,
-							column: i,
-							showLabel: true
+							column: i
 						)
 					)
 				)
 			}
 		),
 		(
-			key: \ctrlBut,
-			shared: (elementType: 'button',
+			key: \ctlBt,
+			shared: (elementType: 'pad',
 				midiChan: 0, spec: 'midiBut', ioType: \inout),
 			elements: (68..71).collect { |midiNote, i|
-				MKtlDesc.notePair(
-					(i+1).asSymbol, midiNote,
+				(
+					key: (i+1).asSymbol, midiNum: midiNote,
+					groupType: \noteOnOffBut,
 					shared: (
+						groupType: \noteOnOffBut,
 						style: (
 							row: 8,
-							column: i + 4,
-							showLabel: true
+							column: i + 4
 						)
 					)
 				)
 			}
 		),
 		(
-			key: \launchBut,
-			shared: (elementType: 'button',
+			key: \lnchBt,
+			shared: (elementType: 'pad',
 				midiChan: 0, spec: 'midiBut', ioType: \inout),
 			elements: (82..89).collect { |midiNote, i|
-				MKtlDesc.notePair(
-					(i+1).asSymbol, midiNote,
+				(
+					key: (i+1).asSymbol, midiNum: midiNote,
+					groupType: \noteOnOffBut,
 					shared: (
+						groupType: \noteOnOffBut,
 						style: (
 							row: i,
-							column: 8,
-							showLabel: true
+							column: 8
 					))
 				)
 			}
 		),
-		MKtlDesc.notePair(
-			\shift, 98,
+		(
+			key: \shift, midiNum: 98,
+			groupType: \noteOnOffBut,
 			shared: (
-				\elementType: 'button',
+				groupType: \noteOnOffBut,
+				\elementType: 'pad',
 				\midiChan: 0,
 				\spec: 'midiBut',
 				\ioType: \inout,
-				style: (
-					row: 8,
-					column: 8,
-					showLabel: true
-				)
+				style: ( row: 8, column: 8 )
 			)
 		),
 		(
@@ -127,7 +130,7 @@ elementsDesc: (
 				midiChan: 0, spec: 'midiBut', ioType: \in),
 			elements: (48..56).collect { |midinote|
 				(midiNum: midinote, spec: 'midiCC', ioType: \in,
-					\style: (row: 9, column: i, showLabel: true)
+					\style: (row: 9, column: i)
 				)
 			}
 		)

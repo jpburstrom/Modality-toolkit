@@ -5,10 +5,7 @@
 
 /*
 // test this desc:
-~thisdesc = thisProcess.nowExecutingPath.basename.split($.).first.postcs;
-d = MKtlDesc.loadDescs(~thisdesc).first;
-d.web;
-
+MKtlDesc.loadDescs("*lpd8");
 // close old m, open new one, make gui:
 m.free; m = MKtl(\lpd8, "*lpd8"); m.gui;
 m.trace;
@@ -94,12 +91,11 @@ deviceInfo: (
 
 elementsDesc: (
 	// key: \lpd8,
-	'shared': (key: \shared, \ioType: \inout, midiChan: 0),
-
+	'shared': ( midiChan: 0),
 	elements: [
 		(
 			key: \kn,
-			shared: (\elementType: \knob, \midiMsgType: \cc,
+			shared: (\elementType: \knob, \midiMsgType: \cc, \ioType: \in,
 				\spec: \midiCC),
 			elements: (1..8).collect { |num, i|
 				(key: num.asSymbol, \midiNum: num,
@@ -109,14 +105,11 @@ elementsDesc: (
 		),
 		(
 			key: \pad,
-			shared: (\elementType: \pad, \spec: \midiVel),
-		 	elements: (36..43).collect { |num, i|
-				MKtlDesc.notePair(
-					(i+1).asSymbol, num,
-					shared: (style: (
-						row: 1 - (i div: 4), // lower row has pad 1-4
-						column: i % 4)
-					)
+			shared: (\elementType: \pad, groupType: \noteOnOff, \ioType: \inout),
+			elements: (36..43).collect { |num, i|
+				(
+					key: (i+1).asSymbol,
+					shared: ( midiNum: num, style: (row: 1 - (i div: 4), column: i % 4))
 				);
 			}
 		)

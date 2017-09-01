@@ -27,9 +27,11 @@ Folders:
 
 code::
 MKtlDesc.defaultFolder;			  // where modality puts descriptions
-MKtlDesc.addFolder("~/Desktop/"); // Add custom folders
+MKtlDesc.userFolder;			  // where user can put personalized descriptions
+
+MKtlDesc.addFolder("~/Desktop/"); // Add custom folders if desired
 MKtlDesc.descFolders;			  // which show up here
-MKtlDesc.openFolder(0);			  // open by index, 0 is defaultFolder
+MKtlDesc.openFolder(0);			  // open by index, 0 is defaultFolder, 1 is userFolder
 MKtlDesc.openFolder(1);
 ::
 
@@ -89,8 +91,11 @@ PRIVATE:: initClass, docURI, parentExt, webview
 METHOD:: defaultFolder
 the path where the folder for MKtlDesc files lives.
 
+METHOD:: userFolder
+the path where users can put personalized MKtlDesc files.
+
 METHOD:: folderName
-the filename of the defaultFolder.
+the name of the defaultFolder and userFolder.
 
 METHOD:: descFolders
 all descFolders within which to look for MKtlDesc files.
@@ -297,4 +302,72 @@ d.matchWithHID(m.device.source);
 // remove hid elem 5 in HID -> now elements remain onlyInHID as well
 m.device.source.elements.removeAt(5);
 d.matchWithHID(m.device.source);
+
+/********** TESTS ********/
+// groupType expansion:
+
+a = (midiNum: 12, style: (width: 0.5, height: 2));
+
+// call funcs directly
+MKtlDesc.groupFuncs['noteOnTrig'].value(a);
+MKtlDesc.groupFuncs['noteOnVel'].value(a);
+
+MKtlDesc.groupFuncs['noteOnOff'].value(a);
+MKtlDesc.groupFuncs['noteOnOffBut'].value(());
+MKtlDesc.groupFuncs['noteOnOffVel'].value(());
+
+MKtlDesc.groupFuncs['noteOnOffCtl'].value(());
+MKtlDesc.groupFuncs['noteOnOffTouch'].value(());
+MKtlDesc.groupFuncs['noteOnOffVelTouch'].value(());
+
+// lookup as it happens in deepExpand
+MKtlDesc.expandElemToGroup(a, 'noteOnOff');
+
+// tests for deepExpand:
+
+~groupType = \noteOnTrig;
+~groupType = \noteOnVel;
+
+~elems = MKtlDesc.deepExpand(
+	(key: \pad,
+		elements: (48..51).collect { |num, i|
+			( midiNum: num, groupType: ~groupType,
+				style: (row: i % 4, column: i div: 4) )
+		}
+	)
+).printAll; "";
+~elems.collect(_.elements).flat.size; // 4
+
+
+// these expand to two each
+~groupType = 'noteOnOff';
+~groupType = 'noteOnOffBut';
+~groupType = 'noteOnOffVel';
+
+~elems = MKtlDesc.deepExpand(
+	(key: \pad,
+		elements: (48..51).collect { |num, i|
+			( midiNum: num, groupType: ~groupType,
+				style: (row: i % 4, column: i div: 4) )
+		}
+	)
+).printAll; "";
+~elems.collect(_.elements).flat.size; // 8
+
+
+// these expand to three each
+~groupType = 'noteOnOffCtl';
+~groupType = 'noteOnOffTouch';
+~groupType = 'noteOnOffVelTouch';
+
+~elems = MKtlDesc.deepExpand(
+	(key: \pad,
+		elements: (48..51).collect { |num, i|
+			( midiNum: num, groupType: ~groupType,
+				style: (row: i % 4, column: i div: 4) )
+		}
+	)
+).printAll; "";
+~elems.collect(_.elements).flat.size; // 12
+
 ::

@@ -1,5 +1,6 @@
 /*
-m = MKtl(\nky2, "*key2"); m.gui;
+MKtlDesc.allDescs.clear;
+m = MKtl(\nky2, "*nanokey2"); m.gui;
 */
 (
 deviceName: "nanoKEY2",
@@ -27,24 +28,30 @@ elementsDesc: (
 	elements: [
 		(
 			key: \pkey,
-			shared: ('elementType': 'pad', 'spec': 'midiVel'),
+			shared: ('elementType': 'pianoKey', groupType: \noteOnOff, spec: \midiVel),
 			elements: (0..120).collect { |midinum, i|
-				MKtlDesc.notePair(i, midinum,
-					(style: (row: i div: 24, column: i % 24))
+				var pos = Piano.pos(midinum % 48, 0);
+				(key: i.asSymbol,
+					shared: (
+						midiNum: midinum,
+						groupType: \noteOnOff,
+						style: (
+							row: (4 - (i div: 48 * 2)) + (pos.y * 0.9),
+							column: pos.x * 0.8,
+							color: pos.color,
+							height: 1.2
+					))
 				);
 			}
 		),
 		(
-			key: \mod, 'midiNum': 1,
-		'midiMsgType': 'cc', 'elementType': 'button', spec: 'midiBut'
+			key: 'mod', 'elementType': 'modWheel',
+			'midiMsgType': 'cc' , 'midiNum': 1, 'spec': 'midiCC',
+			style: (row: 0, column: 18, height: 2)
 		),
 		(
-			key: \, 'midiNum': 1,
-		'midiMsgType': 'cc', 'elementType': 'button', spec: 'midiBut'
-		),
-		(
-			key: \bend,
-			'midiMsgType': 'bend', 'elementType': 'button', 'spec': 'midiBend'
+			key: 'bend', 'elementType': 'bender', 'midiMsgType': 'bend',
+			'spec': 'midiBend', style: (row: 0, column: 19, height: 2)
 		)
 	]
 )
