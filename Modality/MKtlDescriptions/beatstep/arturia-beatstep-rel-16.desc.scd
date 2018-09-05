@@ -147,18 +147,16 @@ elementsDesc: (
 				(
 					key: \stop,
 					groupType: \noteOnOffBut,
-					shared: (elementType: 'pad', midiNum: 1, spec: \midiBut,
-						groupType: \noteOnOffBut,
-						style: (row: 2, column: 0, height: 0.75)
-					)
+					elementType: 'pad', midiNum: 1, spec: \midiBut,
+					style: (row: 2, column: 0, height: 0.75)
+
 				),
 				(
 					key: \play,
 					groupType: \noteOnOffBut,
-					shared: (elementType: 'pad', midiNum: 1, spec: \midiBut,
-						groupType: \noteOnOffBut,
-						style: (row: 2, column: 1, height: 0.75)
-					)
+					elementType: 'pad', midiNum: 1, spec: \midiBut,
+					style: (row: 2, column: 1, height: 0.75)
+
 				),
 
 				(
@@ -167,11 +165,10 @@ elementsDesc: (
 					elements: (36 + ((8..15)++(0..7))).collect { |num,i|
 						(
 							groupType: \noteOnOffTouch,
-							shared: (midiNum: num,
-								groupType: \noteOnOffTouch,
-								style: (row: (i div: 8 + 2), column: i % 8 + 2,
-									height: 1)
-							)
+							midiNum: num,
+							style: (row: (i div: 8 + 2), column: i % 8 + 2,
+								height: 1)
+
 						)
 					}
 				),
